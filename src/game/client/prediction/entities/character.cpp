@@ -955,9 +955,10 @@ CTeamsCore* CCharacter::TeamsCore()
 	return m_Core.m_pTeams;
 }
 
-CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtended)
+CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar)
 : CEntity(pGameWorld, CGameWorld::ENTTYPE_CHARACTER)
 {
+	/*
 	m_ID = ID;
 
 	m_LastWeapon = WEAPON_HAMMER;
@@ -986,6 +987,7 @@ CCharacter::CCharacter(CGameWorld *pGameWorld, int ID, CNetObj_Character *pChar,
 	Read(pChar, pExtended, false);
 
 	GameWorld()->InsertEntity(this);
+	*/
 }
 
 void CCharacter::ResetPrediction()
@@ -1014,8 +1016,9 @@ void CCharacter::ResetPrediction()
 	}
 }
 
-void CCharacter::Read(CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtended, bool IsLocal)
+void CCharacter::Read(CNetObj_Character *pChar, bool IsLocal)
 {
+	/*
 	m_Core.Read((CNetObj_CharacterCore*) pChar);
 
 	if(pExtended)
@@ -1162,6 +1165,7 @@ void CCharacter::Read(CNetObj_Character *pChar, CNetObj_DDNetCharacter *pExtende
 		m_Input.m_TargetX = cosf(pChar->m_Angle/256.0f);
 		m_Input.m_TargetY = sinf(pChar->m_Angle/256.0f);
 	}
+	*/
 }
 
 void CCharacter::SetCoreWorld(CGameWorld *pGameWorld)

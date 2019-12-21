@@ -23,6 +23,8 @@ void CItems::OnReset()
 
 void CItems::RenderProjectile(const CNetObj_Projectile *pCurrent, int ItemID)
 {
+	// TODO: cracknet
+	/*
 	// get positions
 	float Curvature = 0;
 	float Speed = 0;
@@ -48,7 +50,7 @@ void CItems::RenderProjectile(const CNetObj_Projectile *pCurrent, int ItemID)
 		LocalPlayerInGame = m_pClient->m_aClients[m_pClient->m_Snap.m_pLocalInfo->m_ClientID].m_Team != -1;
 
 	static float s_LastGameTickTime = Client()->GameTickTime();
-	if(m_pClient->m_Snap.m_pGameInfoObj && !(m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+	if(m_pClient->m_Snap.m_pGameDataObj && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
 		s_LastGameTickTime = Client()->GameTickTime();
 
 	float Ct;
@@ -99,7 +101,7 @@ void CItems::RenderProjectile(const CNetObj_Projectile *pCurrent, int ItemID)
 		}
 		else
 		{
-			if(m_pClient->m_Snap.m_pGameInfoObj && !(m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+			if(m_pClient->m_Snap.m_pGameDataObj && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
 				s_Time += Client()->LocalTime()-s_LastLocalTime;
 		}
 
@@ -118,10 +120,13 @@ void CItems::RenderProjectile(const CNetObj_Projectile *pCurrent, int ItemID)
 	}
 
 	Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, QuadOffset, Pos.x, Pos.y);
+	*/
 }
 
 void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCurrent, bool IsPredicted)
 {
+	// TODO: cracknet
+	/*
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_GAME].m_Id);
 	Graphics()->QuadsSetRotation(0);
 	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
@@ -166,7 +171,7 @@ void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCu
 	}
 	else
 	{
-		if(m_pClient->m_Snap.m_pGameInfoObj && !(m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+		if(m_pClient->m_Snap.m_pGameDataObj && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
 			s_Time += Client()->LocalTime()-s_LastLocalTime;
 	}
 	Pos.x += cosf(s_Time*2.0f+Offset)*2.5f;
@@ -174,10 +179,13 @@ void CItems::RenderPickup(const CNetObj_Pickup *pPrev, const CNetObj_Pickup *pCu
 	s_LastLocalTime = Client()->LocalTime();
 
 	Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, QuadOffset, Pos.x, Pos.y);
+	*/
 }
 
 void CItems::RenderFlag(const CNetObj_Flag *pPrev, const CNetObj_Flag *pCurrent, const CNetObj_GameData *pPrevGameData, const CNetObj_GameData *pCurGameData)
 {
+	// TODO: cracknet
+	/*
 	float Angle = 0.0f;
 	float Size = 42.0f;
 
@@ -208,6 +216,7 @@ void CItems::RenderFlag(const CNetObj_Flag *pPrev, const CNetObj_Flag *pCurrent,
 	}
 
 	Graphics()->RenderQuadContainerAsSprite(m_ItemsQuadContainerIndex, QuadOffset, Pos.x, Pos.y-Size*0.75f);
+	*/
 }
 
 
@@ -276,6 +285,8 @@ void CItems::RenderLaser(const struct CNetObj_Laser *pCurrent, bool IsPredicted)
 
 void CItems::OnRender()
 {
+	// TODO: cracknet
+	/*
 	if(Client()->State() < IClient::STATE_ONLINE)
 		return;
 
@@ -389,6 +400,7 @@ void CItems::OnRender()
 
 	Graphics()->QuadsSetRotation(0);
 	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
+	*/
 }
 
 void CItems::OnInit()
@@ -444,6 +456,8 @@ void CItems::AddExtraProjectile(CNetObj_Projectile *pProj)
 
 void CItems::ReconstructSmokeTrail(const CNetObj_Projectile *pCurrent, int ItemID, int DestroyTick, int LifeSpan)
 {
+	// TODO: cracknet
+	/*
 	bool LocalPlayerInGame = false;
 
 	if(m_pClient->m_Snap.m_pLocalInfo)
@@ -514,4 +528,5 @@ void CItems::ReconstructSmokeTrail(const CNetObj_Projectile *pCurrent, int ItemI
 		else
 			m_pClient->m_pEffects->BulletTrail(Pos, Alpha, TimePassed);
 	}
+	*/
 }

@@ -64,6 +64,8 @@ void CKillMessages::OnInit()
 
 void CKillMessages::OnMessage(int MsgType, void *pRawMsg)
 {
+	// TODO: cracknet
+	/*
 	if(MsgType == NETMSGTYPE_SV_KILLMSG)
 	{
 		CNetMsg_Sv_KillMsg *pMsg = (CNetMsg_Sv_KillMsg *)pRawMsg;
@@ -134,10 +136,13 @@ void CKillMessages::OnMessage(int MsgType, void *pRawMsg)
 
 		m_aKillmsgs[m_KillmsgCurrent] = Kill;
 	}
+	*/
 }
 
 void CKillMessages::OnRender()
 {
+	// TODO: cracknet
+	/*
 	if(!g_Config.m_ClShowKillMessages)
 		return;
 
@@ -175,7 +180,7 @@ void CKillMessages::OnRender()
 		// render victim tee
 		x -= 24.0f;
 
-		if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_FLAGS)
+		if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_FLAGS)
 		{
 			if(m_aKillmsgs[r].m_ModeSpecial&1)
 			{
@@ -202,7 +207,7 @@ void CKillMessages::OnRender()
 
 		if(m_aKillmsgs[r].m_VictimID != m_aKillmsgs[r].m_KillerID)
 		{
-			if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_FLAGS)
+			if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_FLAGS)
 			{
 				if(m_aKillmsgs[r].m_ModeSpecial&2)
 				{
@@ -230,4 +235,5 @@ void CKillMessages::OnRender()
 
 		y += 46.0f;
 	}
+	*/
 }

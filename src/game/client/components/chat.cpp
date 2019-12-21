@@ -645,7 +645,7 @@ void CChat::AddLine(int ClientID, int Team, const char *pLine)
 			if(m_pClient->m_aClients[ClientID].m_Team == TEAM_SPECTATORS)
 				m_aLines[m_CurrentLine].m_NameColor = TEAM_SPECTATORS;
 
-			if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS)
+			if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
 			{
 				if(m_pClient->m_aClients[ClientID].m_Team == TEAM_RED)
 					m_aLines[m_CurrentLine].m_NameColor = TEAM_RED;
@@ -1002,13 +1002,14 @@ void CChat::OnRender()
 	}
 }
 
-void CChat::Say(int Team, const char *pLine)
+void CChat::Say(int Mode, const char *pLine)
 {
 	m_LastChatSend = time_get();
 
 	// send chat message
 	CNetMsg_Cl_Say Msg;
-	Msg.m_Team = Team;
+	Msg.m_Mode = Mode;
+	Msg.m_Target = Mode==CHAT_WHISPER ? m_WhisperTarget : -1;
 	Msg.m_pMessage = pLine;
 	Client()->SendPackMsg(&Msg, MSGFLAG_VITAL);
 }

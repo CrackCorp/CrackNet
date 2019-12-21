@@ -1981,6 +1981,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 						m_GameTime[g_Config.m_ClDummy].Update(&m_GametimeMarginGraph, (GameTick-1)*time_freq()/50, TimeLeft, 0);
 					}
 
+					/*
 					if(m_ReceivedSnapshots[g_Config.m_ClDummy] > 50 && !m_aTimeoutCodeSent[g_Config.m_ClDummy])
 					{
 						if(m_ServerCapabilities.m_ChatTimeoutCode || ShouldSendChatTimeoutCodeHeuristic())
@@ -1996,6 +1997,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 							SendMsgExY(&Packer, MSGFLAG_VITAL, false, g_Config.m_ClDummy);
 						}
 					}
+					*/
 
 					// ack snapshot
 					m_AckGameTick[g_Config.m_ClDummy] = GameTick;

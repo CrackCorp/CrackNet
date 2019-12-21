@@ -32,6 +32,8 @@
 
 void CMenus::RenderGame(CUIRect MainView)
 {
+	// TODO: cracknet
+	/*
 	CUIRect Button, ButtonBar;
 	MainView.HSplitTop(45.0f, &ButtonBar, &MainView);
 	RenderTools()->DrawUIRect(&ButtonBar, ms_ColorTabbarActive, CUI::CORNER_B, 10.0f);
@@ -60,7 +62,7 @@ void CMenus::RenderGame(CUIRect MainView)
 	static int s_JoinBlueButton = 0;
 	bool DummyConnecting = m_pClient->Client()->DummyConnecting();
 
-	if(m_pClient->m_Snap.m_pLocalInfo && m_pClient->m_Snap.m_pGameInfoObj)
+	if(m_pClient->m_Snap.m_pLocalInfo && m_pClient->m_Snap.m_pGameDataObj)
 	{
 		if(m_pClient->m_Snap.m_pLocalInfo->m_Team != TEAM_SPECTATORS)
 		{
@@ -76,7 +78,7 @@ void CMenus::RenderGame(CUIRect MainView)
 			}
 		}
 
-		if(m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags & GAMEFLAG_TEAMS)
+		if(m_pClient->m_Snap.m_pGameDataObj->m_GameFlags & GAMEFLAG_TEAMS)
 		{
 			if(m_pClient->m_Snap.m_pLocalInfo->m_Team != TEAM_RED)
 			{
@@ -154,10 +156,13 @@ void CMenus::RenderGame(CUIRect MainView)
 			}
 		}
 	}
+	*/
 }
 
 void CMenus::RenderPlayers(CUIRect MainView)
 {
+	// TODO: cracknet
+	/*
 	CUIRect Button, Button2, ButtonBar, Options, Player;
 	RenderTools()->DrawUIRect(&MainView, ms_ColorTabbarActive, CUI::CORNER_B, 10.0f);
 
@@ -287,6 +292,7 @@ void CMenus::RenderPlayers(CUIRect MainView)
 	}
 
 	UiDoListboxEnd(&s_ScrollValue, 0);
+	*/ // TODO: cracknet end
 	/*
 	CUIRect bars;
 	votearea.HSplitTop(10.0f, 0, &votearea);
@@ -341,6 +347,8 @@ void CMenus::RenderPlayers(CUIRect MainView)
 
 void CMenus::RenderServerInfo(CUIRect MainView)
 {
+	// TODO: cracknet
+	/*
 	if(!m_pClient->m_Snap.m_pLocalInfo)
 		return;
 
@@ -418,7 +426,7 @@ void CMenus::RenderServerInfo(CUIRect MainView)
 	TextRender()->Text(0, GameInfo.x+x, GameInfo.y+y, 32, Localize("Game info"), 250);
 	y += 32.0f+5.0f;
 
-	if(m_pClient->m_Snap.m_pGameInfoObj)
+	if(m_pClient->m_Snap.m_pGameDataObj)
 	{
 		mem_zero(aBuf, sizeof(aBuf));
 		str_format(
@@ -433,8 +441,8 @@ void CMenus::RenderServerInfo(CUIRect MainView)
 			"%s: %d/%d\n",
 			Localize("Game type"), CurrentServerInfo.m_aGameType,
 			Localize("Map"), CurrentServerInfo.m_aMap,
-			Localize("Score limit"), m_pClient->m_Snap.m_pGameInfoObj->m_ScoreLimit,
-			Localize("Time limit"), m_pClient->m_Snap.m_pGameInfoObj->m_TimeLimit,
+			Localize("Score limit"), m_pClient->m_Snap.m_pGameDataObj->m_ScoreLimit,
+			Localize("Time limit"), m_pClient->m_Snap.m_pGameDataObj->m_TimeLimit,
 			Localize("Players"), m_pClient->m_Snap.m_NumPlayers, CurrentServerInfo.m_MaxClients
 		);
 		TextRender()->Text(0, GameInfo.x+x, GameInfo.y+y, 20, aBuf, 250);
@@ -449,6 +457,7 @@ void CMenus::RenderServerInfo(CUIRect MainView)
 	TextRender()->Text(0, Motd.x+x, Motd.y+y, 32, Localize("MOTD"), -1);
 	y += 32.0f+5.0f;
 	TextRender()->Text(0, Motd.x+x, Motd.y+y, 16, m_pClient->m_pMotd->m_aServerMotd, (int)Motd.w);
+	*/
 }
 
 bool CMenus::RenderServerControlServer(CUIRect MainView)
@@ -497,6 +506,8 @@ bool CMenus::RenderServerControlServer(CUIRect MainView)
 
 bool CMenus::RenderServerControlKick(CUIRect MainView, bool FilterSpectators)
 {
+	// TODO: cracknet
+	/*
 	int NumOptions = 0;
 	int Selected = -1;
 	static int aPlayerIDs[MAX_CLIENTS];
@@ -541,6 +552,10 @@ bool CMenus::RenderServerControlKick(CUIRect MainView, bool FilterSpectators)
 	Selected = UiDoListboxEnd(&s_ScrollValue, &Call);
 	m_CallvoteSelectedPlayer = Selected != -1 ? aPlayerIDs[Selected] : -1;
 	return Call;
+	*/
+
+
+	return false;
 }
 
 void CMenus::RenderServerControl(CUIRect MainView)

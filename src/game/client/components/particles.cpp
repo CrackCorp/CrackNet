@@ -37,6 +37,8 @@ void CParticles::OnReset()
 
 void CParticles::Add(int Group, CParticle *pPart, float TimePassed)
 {
+	// TODO: cracknet
+	/*
 	if(Client()->State() == IClient::STATE_DEMOPLAYBACK)
 	{
 		const IDemoPlayer::CInfo *pInfo = DemoPlayer()->BaseInfo();
@@ -45,7 +47,7 @@ void CParticles::Add(int Group, CParticle *pPart, float TimePassed)
 	}
 	else
 	{
-		if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
+		if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
 			return;
 	}
 
@@ -70,6 +72,7 @@ void CParticles::Add(int Group, CParticle *pPart, float TimePassed)
 
 	// set some parameters
 	m_aParticles[Id].m_Life = TimePassed;
+	*/
 }
 
 void CParticles::Update(float TimePassed)
@@ -137,6 +140,8 @@ void CParticles::Update(float TimePassed)
 
 void CParticles::OnRender()
 {
+	// TODO: cracknet
+	/*
 	if(Client()->State() < IClient::STATE_ONLINE)
 		return;
 
@@ -152,11 +157,12 @@ void CParticles::OnRender()
 	}
 	else
 	{
-		if(m_pClient->m_Snap.m_pGameInfoObj && !(m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+		if(m_pClient->m_Snap.m_pGameDataObj && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
 			Update((float)((t-LastTime)/(double)time_freq()));
 	}
 
 	LastTime = t;
+	*/
 }
 
 void CParticles::OnInit()

@@ -178,9 +178,6 @@ public:
 	class IFriends *Foes() { return m_pFoes; }
 	class IUpdater *Updater() { return m_pUpdater; }
 
-	int NetobjNumCorrections() { return m_NetObjHandler.NumObjCorrections(); }
-	const char *NetobjCorrectedOn() { return m_NetObjHandler.CorrectedObjOn(); }
-
 	bool m_SuppressEvents;
 	bool m_NewTick;
 	bool m_NewPredictedTick;
@@ -206,6 +203,12 @@ public:
 	CCharacterCore m_PredictedPrevChar;
 	CCharacterCore m_PredictedChar;
 
+	struct CPlayerInfoItem
+	{
+		const CNetObj_PlayerInfo *m_pPlayerInfo;
+		int m_ClientID;
+	};
+
 	// snap pointers
 	struct CSnapState
 	{
@@ -215,24 +218,24 @@ public:
 		const CNetObj_SpectatorInfo *m_pSpectatorInfo;
 		const CNetObj_SpectatorInfo *m_pPrevSpectatorInfo;
 		const CNetObj_Flag *m_paFlags[2];
-		const CNetObj_GameInfo *m_pGameInfoObj;
-		const CNetObj_GameData *m_pGameDataObj;
-		int m_GameDataSnapID;
+		const CNetObj_GameData *m_pGameData;
+		const CNetObj_GameDataTeam *m_pGameDataTeam;
+		const CNetObj_GameDataFlag *m_pGameDataFlag;
+		const CNetObj_GameDataRace *m_pGameDataRace;
+		int m_GameDataFlagSnapID;
+
+		int m_NotReadyCount;
+		int m_AliveCount[NUM_TEAMS];
 
 		const CNetObj_PlayerInfo *m_paPlayerInfos[MAX_CLIENTS];
-		const CNetObj_PlayerInfo *m_paInfoByScore[MAX_CLIENTS];
-		const CNetObj_PlayerInfo *m_paInfoByName[MAX_CLIENTS];
-		//const CNetObj_PlayerInfo *m_paInfoByTeam[MAX_CLIENTS];
-		const CNetObj_PlayerInfo *m_paInfoByDDTeam[MAX_CLIENTS];
-
-		int m_LocalClientID;
-		int m_NumPlayers;
-		int m_aTeamSize[2];
+		const CNetObj_PlayerInfoRace *m_paPlayerInfosRace[MAX_CLIENTS];
+		CPlayerInfoItem m_aInfoByScore[MAX_CLIENTS];
 
 		// spectate data
 		struct CSpectateInfo
 		{
 			bool m_Active;
+			int m_SpecMode;
 			int m_SpectatorID;
 			bool m_UsePosition;
 			vec2 m_Position;
@@ -246,9 +249,6 @@ public:
 			// snapshots
 			CNetObj_Character m_Prev;
 			CNetObj_Character m_Cur;
-
-			CNetObj_DDNetCharacter m_ExtendedData;
-			bool m_HasExtendedData;
 
 			// interpolated position
 			vec2 m_Position;
@@ -452,7 +452,8 @@ public:
 	bool AntiPingGrenade() { return g_Config.m_ClAntiPing && g_Config.m_ClAntiPingGrenade && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK; }
 	bool AntiPingWeapons() { return g_Config.m_ClAntiPing && g_Config.m_ClAntiPingWeapons && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK; }
 	bool AntiPingGunfire() { return AntiPingGrenade() && AntiPingWeapons() && g_Config.m_ClAntiPingGunfire; }
-	bool Predict() { return g_Config.m_ClPredict && !(m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER) && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK && m_Snap.m_pLocalCharacter; }
+	// bool Predict() { return g_Config.m_ClPredict && !(m_Snap.m_pGameDataObj && m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER) && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK && m_Snap.m_pLocalCharacter; }
+	bool Predict() { return false; }
 
 	CGameWorld m_GameWorld;
 	CGameWorld m_PredictedWorld;

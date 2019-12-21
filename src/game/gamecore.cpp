@@ -555,6 +555,7 @@ void CCharacterCore::Read(const CNetObj_CharacterCore *pObjCore)
 	m_Angle = pObjCore->m_Angle;
 }
 
+/*
 void CCharacterCore::ReadDDNet(const CNetObj_DDNetCharacter *pObjDDNet)
 {
 	// Collision
@@ -582,6 +583,7 @@ void CCharacterCore::ReadDDNet(const CNetObj_DDNetCharacter *pObjDDNet)
 
 	m_Jumps = pObjDDNet->m_Jumps;
 }
+*/
 
 void CCharacterCore::Quantize()
 {

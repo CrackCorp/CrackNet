@@ -172,7 +172,13 @@ class TextureHandle(BaseType):
 	def __init__(self):
 		BaseType.__init__(self, "IGraphics::CTextureHandle")
 	def EmitDefinition(self, name):
-		return ["IGraphics::CTextureHandle()"]
+		return ["IGraphics::CTextureHandle()"]	
+
+class SampleHandle(BaseType):
+	def __init__(self):
+		BaseType.__init__(self, "ISound::CSampleHandle")
+	def EmitDefinition(self, name):
+		return ["ISound::CSampleHandle()"]	
 
 # helper functions
 
@@ -204,7 +210,7 @@ class Flags:
 		self.values = values
 
 class NetObject:
-	def __init__(self, name, variables, ex=None, validate_size=True):
+	def __init__(self, name, variables):
 		l = name.split(":")
 		self.name = l[0]
 		self.base = ""
@@ -214,8 +220,6 @@ class NetObject:
 		self.struct_name = "CNetObj_%s" % self.name
 		self.enum_name = "NETOBJTYPE_%s" % self.name.upper()
 		self.variables = variables
-		self.ex = ex
-		self.validate_size = validate_size
 	def emit_declaration(self):
 		if self.base:
 			lines = ["struct %s : public %s"%(self.struct_name,self.base_struct_name), "{"]
@@ -228,32 +232,28 @@ class NetObject:
 	def emit_validate(self):
 		lines = ["case %s:" % self.enum_name]
 		lines += ["{"]
-		if self.validate_size:
-			lines += ["\t%s *pObj = (%s *)pData;"%(self.struct_name, self.struct_name)]
-			lines += ["\tif((int)sizeof(*pObj) > Size) return -1;"]
-		prev_len = len(lines)
+		lines += ["\t%s *pObj = (%s *)pData;"%(self.struct_name, self.struct_name)]
+		lines += ["\tif(sizeof(*pObj) != Size) return -1;"]
 		for v in self.variables:
 			lines += ["\t"+line for line in v.emit_validate()]
-		if not self.validate_size and prev_len != len(lines):
-			raise ValueError("Can't use members that need validation in a struct whose size isn't validated")
 		lines += ["\treturn 0;"]
 		lines += ["}"]
 		return lines
 
+
 class NetEvent(NetObject):
-	def __init__(self, name, variables, ex=None):
-		NetObject.__init__(self, name, variables, ex=ex)
+	def __init__(self, name, variables):
+		NetObject.__init__(self, name, variables)
 		self.base_struct_name = "CNetEvent_%s" % self.base
 		self.struct_name = "CNetEvent_%s" % self.name
 		self.enum_name = "NETEVENTTYPE_%s" % self.name.upper()
 
 class NetMessage(NetObject):
-	def __init__(self, name, variables, ex=None, teehistorian=True):
-		NetObject.__init__(self, name, variables, ex=ex)
+	def __init__(self, name, variables):
+		NetObject.__init__(self, name, variables)
 		self.base_struct_name = "CNetMsg_%s" % self.base
 		self.struct_name = "CNetMsg_%s" % self.name
 		self.enum_name = "NETMSGTYPE_%s" % self.name.upper()
-		self.teehistorian = teehistorian
 	def emit_unpack(self):
 		lines = []
 		lines += ["case %s:" % self.enum_name]
@@ -283,18 +283,6 @@ class NetMessage(NetObject):
 		lines = lines[:-1] + extra + lines[-1:]
 		return lines
 
-class NetObjectEx(NetObject):
-	def __init__(self, name, ex, variables, validate_size=True):
-		NetObject.__init__(self, name, variables, ex=ex, validate_size=validate_size)
-
-class NetEventEx(NetEvent):
-	def __init__(self, name, ex, variables):
-		NetEvent.__init__(self, name, variables, ex=ex)
-
-class NetMessageEx(NetMessage):
-	def __init__(self, name, ex, variables, teehistorian=True):
-		NetMessage.__init__(self, name, variables, ex=ex)
-
 
 class NetVariable:
 	def __init__(self, name):
@@ -315,14 +303,6 @@ class NetString(NetVariable):
 		return ["const char *%s;"%self.name]
 	def emit_unpack(self):
 		return ["pMsg->%s = pUnpacker->GetString();" % self.name]
-	def emit_pack(self):
-		return ["pPacker->AddString(%s, -1);" % self.name]
-
-class NetStringHalfStrict(NetVariable):
-	def emit_declaration(self):
-		return ["const char *%s;"%self.name]
-	def emit_unpack(self):
-		return ["pMsg->%s = pUnpacker->GetString(CUnpacker::SANITIZE_CC);" % self.name]
 	def emit_pack(self):
 		return ["pPacker->AddString(%s, -1);" % self.name]
 
@@ -348,14 +328,66 @@ class NetIntRange(NetIntAny):
 		self.min = str(min)
 		self.max = str(max)
 	def emit_validate(self):
-		return ["pObj->%s = ClampInt(\"%s\", pObj->%s, %s, %s);"%(self.name, self.name, self.name, self.min, self.max)]
+		return ["if(!CheckInt(\"%s\", pObj->%s, %s, %s)) return -1;"%(self.name, self.name, self.min, self.max)]
 	def emit_unpack_check(self):
-		return ["if(pMsg->%s < %s || pMsg->%s > %s) { m_pMsgFailedOn = \"%s\"; break; }" % (self.name, self.min, self.name, self.max, self.name)]
+		return ["if(!CheckInt(\"%s\", pMsg->%s, %s, %s)) break;"%(self.name, self.name, self.min, self.max)]
+
+class NetEnum(NetIntRange):
+	def __init__(self, name, enum):
+		NetIntRange.__init__(self, name, 0, len(enum.values)-1)
+
+class NetFlag(NetIntAny):
+	def __init__(self, name, flag):
+		NetIntAny.__init__(self, name)
+		if len(flag.values) > 0:
+			self.mask = "%s_%s" % (flag.name, flag.values[0])
+			for i in flag.values[1:]:
+				self.mask += "|%s_%s" % (flag.name, i)
+		else:
+			self.mask = "0"
+	def emit_validate(self):
+		return ["if(!CheckFlag(\"%s\", pObj->%s, %s)) return -1;"%(self.name, self.name, self.mask)]
+	def emit_unpack_check(self):
+		return ["if(!CheckFlag(\"%s\", pMsg->%s, %s)) break;"%(self.name, self.name, self.mask)]
 
 class NetBool(NetIntRange):
 	def __init__(self, name):
 		NetIntRange.__init__(self,name,0,1)
 
-class NetTick(NetIntAny):
+class NetTick(NetIntRange):
 	def __init__(self, name):
-		NetIntAny.__init__(self,name)
+		NetIntRange.__init__(self,name,0,'max_int')
+
+class NetArray(NetVariable):
+	def __init__(self, var, size):
+		self.base_name = var.name
+		self.var = var
+		self.size = size
+		self.name = self.base_name + "[%d]"%self.size
+	def emit_declaration(self):
+		self.var.name = self.name
+		return self.var.emit_declaration()
+	def emit_validate(self):
+		lines = []
+		for i in range(self.size):
+			self.var.name = self.base_name + "[%d]"%i
+			lines += self.var.emit_validate()
+		return lines
+	def emit_unpack(self):
+		lines = []
+		for i in range(self.size):
+			self.var.name = self.base_name + "[%d]"%i
+			lines += self.var.emit_unpack()
+		return lines
+	def emit_pack(self):
+		lines = []
+		for i in range(self.size):
+			self.var.name = self.base_name + "[%d]"%i
+			lines += self.var.emit_pack()
+		return lines
+	def emit_unpack_check(self):
+		lines = []
+		for i in range(self.size):
+			self.var.name = self.base_name + "[%d]"%i
+			lines += self.var.emit_unpack_check()
+		return lines

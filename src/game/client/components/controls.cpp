@@ -204,8 +204,6 @@ int CControls::SnapInput(int *pData)
 	// update player state
 	if(m_pClient->m_pChat->IsActive())
 		m_InputData[g_Config.m_ClDummy].m_PlayerFlags = PLAYERFLAG_CHATTING;
-	else if(m_pClient->m_pMenus->IsActive())
-		m_InputData[g_Config.m_ClDummy].m_PlayerFlags = PLAYERFLAG_IN_MENU;
 	else
 	{
 		if(m_InputData[g_Config.m_ClDummy].m_PlayerFlags == PLAYERFLAG_CHATTING)
@@ -213,17 +211,10 @@ int CControls::SnapInput(int *pData)
 			if(GameClient()->m_GameInfo.m_BugDDRaceInput)
 				ResetInput(g_Config.m_ClDummy);
 		}
-		m_InputData[g_Config.m_ClDummy].m_PlayerFlags = PLAYERFLAG_PLAYING;
 	}
 
 	if(m_pClient->m_pScoreboard->Active())
 		m_InputData[g_Config.m_ClDummy].m_PlayerFlags |= PLAYERFLAG_SCOREBOARD;
-
-	if(m_InputData[g_Config.m_ClDummy].m_PlayerFlags != PLAYERFLAG_PLAYING)
-		m_JoystickTapTime = 0; // Do not launch hook on first tap
-
-	if (m_pClient->m_pControls->m_ShowHookColl[g_Config.m_ClDummy])
-		m_InputData[g_Config.m_ClDummy].m_PlayerFlags |= PLAYERFLAG_AIM;
 
 	if(m_LastData[g_Config.m_ClDummy].m_PlayerFlags != m_InputData[g_Config.m_ClDummy].m_PlayerFlags)
 		Send = true;
@@ -231,7 +222,7 @@ int CControls::SnapInput(int *pData)
 	m_LastData[g_Config.m_ClDummy].m_PlayerFlags = m_InputData[g_Config.m_ClDummy].m_PlayerFlags;
 
 	// we freeze the input if chat or menu is activated
-	if(!(m_InputData[g_Config.m_ClDummy].m_PlayerFlags&PLAYERFLAG_PLAYING))
+	if(m_pClient->m_pChat->IsActive() || m_pClient->m_pMenus->IsActive())
 	{
 		if(!GameClient()->m_GameInfo.m_BugDDRaceInput)
 			ResetInput(g_Config.m_ClDummy);
@@ -470,7 +461,7 @@ void CControls::OnRender()
 	}
 
 	// update target pos
-	if(m_pClient->m_Snap.m_pGameInfoObj && !m_pClient->m_Snap.m_SpecInfo.m_Active)
+	if(m_pClient->m_Snap.m_pGameDataObj && !m_pClient->m_Snap.m_SpecInfo.m_Active)
 		m_TargetPos[g_Config.m_ClDummy] = m_pClient->m_LocalCharacterPos + m_MousePos[g_Config.m_ClDummy];
 	else if(m_pClient->m_Snap.m_SpecInfo.m_Active && m_pClient->m_Snap.m_SpecInfo.m_UsePosition)
 		m_TargetPos[g_Config.m_ClDummy] = m_pClient->m_Snap.m_SpecInfo.m_Position + m_MousePos[g_Config.m_ClDummy];
@@ -480,8 +471,10 @@ void CControls::OnRender()
 
 bool CControls::OnMouseMove(float x, float y)
 {
-	if((m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+	if((m_pClient->m_Snap.m_pGameData && m_pClient->m_Snap.m_pGameData->m_GameStateFlags&(GAMESTATEFLAG_PAUSED|GAMESTATEFLAG_ROUNDOVER|GAMESTATEFLAG_GAMEOVER)) ||
+		(m_pClient->m_Snap.m_SpecInfo.m_Active && m_pClient->m_pChat->IsActive()))
 		return false;
+
 
 	if(g_Config.m_ClDyncam && g_Config.m_ClDyncamMousesens)
 	{

@@ -210,6 +210,7 @@ void CVoting::OnMessage(int MsgType, void *pRawMsg)
 	{
 		ClearOptions();
 	}
+	/*
 	else if(MsgType == NETMSGTYPE_SV_VOTEOPTIONLISTADD)
 	{
 		CNetMsg_Sv_VoteOptionListAdd *pMsg = (CNetMsg_Sv_VoteOptionListAdd *)pRawMsg;
@@ -236,6 +237,7 @@ void CVoting::OnMessage(int MsgType, void *pRawMsg)
 			}
 		}
 	}
+	*/
 	else if(MsgType == NETMSGTYPE_SV_VOTEOPTIONADD)
 	{
 		CNetMsg_Sv_VoteOptionAdd *pMsg = (CNetMsg_Sv_VoteOptionAdd *)pRawMsg;

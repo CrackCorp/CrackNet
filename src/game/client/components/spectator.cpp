@@ -31,6 +31,8 @@ void CSpectator::ConSpectate(IConsole::IResult *pResult, void *pUserData)
 
 void CSpectator::ConSpectateNext(IConsole::IResult *pResult, void *pUserData)
 {
+	// TODO: cracknet
+	/*
 	CSpectator *pSelf = (CSpectator *)pUserData;
 	int NewSpectatorID;
 	bool GotNewSpectatorID = false;
@@ -79,10 +81,13 @@ void CSpectator::ConSpectateNext(IConsole::IResult *pResult, void *pUserData)
 	}
 	if(GotNewSpectatorID)
 		pSelf->Spectate(NewSpectatorID);
+	*/
 }
 
 void CSpectator::ConSpectatePrevious(IConsole::IResult *pResult, void *pUserData)
 {
+	// TODO: cracknet
+	/*
 	CSpectator *pSelf = (CSpectator *)pUserData;
 	int NewSpectatorID;
 	bool GotNewSpectatorID = false;
@@ -131,6 +136,7 @@ void CSpectator::ConSpectatePrevious(IConsole::IResult *pResult, void *pUserData
 	}
 	if(GotNewSpectatorID)
 		pSelf->Spectate(NewSpectatorID);
+	*/
 }
 
 CSpectator::CSpectator()
@@ -164,6 +170,8 @@ void CSpectator::OnRelease()
 
 void CSpectator::OnRender()
 {
+	// TODO: cracknet
+	/*
 	if(!m_Active)
 	{
 		if(m_WasActive)
@@ -376,7 +384,7 @@ void CSpectator::OnRender()
 		TextRender()->Text(0, Width/2.0f+x+50.0f, Height / 2.0f + y + BoxMove + (LineHeight - FontSize) / 2.f, FontSize, m_pClient->m_aClients[m_pClient->m_Snap.m_paInfoByDDTeam[i]->m_ClientID].m_aName, 220.0f);
 
 		// flag
-		if(m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_FLAGS &&
+		if(m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_FLAGS &&
 			m_pClient->m_Snap.m_pGameDataObj && (m_pClient->m_Snap.m_pGameDataObj->m_FlagCarrierRed == m_pClient->m_Snap.m_paInfoByDDTeam[i]->m_ClientID ||
 			m_pClient->m_Snap.m_pGameDataObj->m_FlagCarrierBlue == m_pClient->m_Snap.m_paInfoByDDTeam[i]->m_ClientID))
 		{
@@ -407,6 +415,7 @@ void CSpectator::OnRender()
 	IGraphics::CQuadItem QuadItem(m_SelectorMouse.x+Width/2.0f, m_SelectorMouse.y+Height/2.0f, 48.0f, 48.0f);
 	Graphics()->QuadsDrawTL(&QuadItem, 1);
 	Graphics()->QuadsEnd();
+	*/
 }
 
 void CSpectator::OnReset()
@@ -418,6 +427,8 @@ void CSpectator::OnReset()
 
 void CSpectator::Spectate(int SpectatorID)
 {
+	// TODO: cracknet
+	/*
 	if(Client()->State() == IClient::STATE_DEMOPLAYBACK)
 	{
 		m_pClient->m_DemoSpecID = clamp(SpectatorID, (int)SPEC_FOLLOW, MAX_CLIENTS-1);
@@ -430,4 +441,5 @@ void CSpectator::Spectate(int SpectatorID)
 	CNetMsg_Cl_SetSpectatorMode Msg;
 	Msg.m_SpectatorID = SpectatorID;
 	Client()->SendPackMsg(&Msg, MSGFLAG_VITAL);
+	*/
 }

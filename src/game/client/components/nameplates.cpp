@@ -27,6 +27,8 @@ void CNamePlates::RenderNameplate(
 	const CNetObj_PlayerInfo *pPlayerInfo
 	)
 {
+	// TODO: cracknet
+	/*
 	int ClientID = pPlayerInfo->m_ClientID;
 
 	vec2 Position;
@@ -117,7 +119,7 @@ void CNamePlates::RenderNameplate(
 			TOutlineColor.Set(0.0f, 0.0f, 0.0f, 0.5f*a);
 			TColor.Set(rgb.r, rgb.g, rgb.b, a);
 		}
-		if(g_Config.m_ClNameplatesTeamcolors && m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS)
+		if(g_Config.m_ClNameplatesTeamcolors && m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
 		{
 			if(m_pClient->m_aClients[ClientID].m_Team == TEAM_RED)
 				TColor.Set(1.0f, 0.5f, 0.5f, a);
@@ -148,6 +150,7 @@ void CNamePlates::RenderNameplate(
 
 		TextRender()->SetRenderFlags(0);
 	}
+	*/
 }
 
 void CNamePlates::OnRender()

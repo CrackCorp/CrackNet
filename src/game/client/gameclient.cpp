@@ -523,31 +523,18 @@ void CGameClient::OnReset()
 	m_ShowOthers[1] = -1;
 }
 
-
 void CGameClient::UpdatePositions()
 {
 	// local character position
 	if(g_Config.m_ClPredict && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 	{
-		if(!AntiPingPlayers())
+		if(!m_Snap.m_pLocalCharacter ||
+			(m_Snap.m_pGameData && m_Snap.m_pGameData->m_GameStateFlags&(GAMESTATEFLAG_PAUSED|GAMESTATEFLAG_ROUNDOVER|GAMESTATEFLAG_GAMEOVER)))
 		{
-			if(!m_Snap.m_pLocalCharacter || (m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER))
-			{
-				// don't use predicted
-			}
-			else
-				m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick());
+			// don't use predicted
 		}
 		else
-		{
-			if(!(m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER))
-			{
-				if(m_Snap.m_pLocalCharacter)
-					m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick());
-			}
-	//		else
-	//			m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick());
-		}
+			m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick());
 	}
 	else if(m_Snap.m_pLocalCharacter && m_Snap.m_pLocalPrevCharacter)
 	{
@@ -559,26 +546,28 @@ void CGameClient::UpdatePositions()
 	// spectator position
 	if(m_Snap.m_SpecInfo.m_Active)
 	{
-		if(Client()->State() == IClient::STATE_DEMOPLAYBACK && m_DemoSpecID != SPEC_FOLLOW && m_Snap.m_SpecInfo.m_SpectatorID != SPEC_FREEVIEW)
+		if(Client()->State() == IClient::STATE_DEMOPLAYBACK && DemoPlayer()->GetDemoType() == IDemoPlayer::DEMOTYPE_SERVER &&
+			m_Snap.m_SpecInfo.m_SpectatorID != -1)
 		{
 			m_Snap.m_SpecInfo.m_Position = mix(
 				vec2(m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Prev.m_X, m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Prev.m_Y),
 				vec2(m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Cur.m_X, m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Cur.m_Y),
 				Client()->IntraGameTick());
+			m_LocalCharacterPos = m_Snap.m_SpecInfo.m_Position;
 			m_Snap.m_SpecInfo.m_UsePosition = true;
 		}
-		else if(m_Snap.m_pSpectatorInfo && ((Client()->State() == IClient::STATE_DEMOPLAYBACK && m_DemoSpecID == SPEC_FOLLOW) || (Client()->State() != IClient::STATE_DEMOPLAYBACK && m_Snap.m_SpecInfo.m_SpectatorID != SPEC_FREEVIEW)))
+		else if(m_Snap.m_pSpectatorInfo && (Client()->State() == IClient::STATE_DEMOPLAYBACK || m_Snap.m_SpecInfo.m_SpecMode != SPEC_FREEVIEW ||
+				(m_Snap.m_pLocalInfo && (m_Snap.m_pLocalInfo->m_PlayerFlags&PLAYERFLAG_DEAD) && m_Snap.m_SpecInfo.m_SpecMode != SPEC_FREEVIEW)))
 		{
 			if(m_Snap.m_pPrevSpectatorInfo)
 				m_Snap.m_SpecInfo.m_Position = mix(vec2(m_Snap.m_pPrevSpectatorInfo->m_X, m_Snap.m_pPrevSpectatorInfo->m_Y),
 													vec2(m_Snap.m_pSpectatorInfo->m_X, m_Snap.m_pSpectatorInfo->m_Y), Client()->IntraGameTick());
 			else
 				m_Snap.m_SpecInfo.m_Position = vec2(m_Snap.m_pSpectatorInfo->m_X, m_Snap.m_pSpectatorInfo->m_Y);
+			m_LocalCharacterPos = m_Snap.m_SpecInfo.m_Position;
 			m_Snap.m_SpecInfo.m_UsePosition = true;
 		}
 	}
-
-	UpdateRenderedCharacters();
 }
 
 
@@ -1236,6 +1225,7 @@ void CGameClient::OnNewSnapshot()
 					m_aClients[Item.m_ID].m_Evolved.m_Tick = -1;
 				}
 			}
+			/*
 			else if(Item.m_Type == NETOBJTYPE_DDNETCHARACTER)
 			{
 				const CNetObj_DDNetCharacter *pCharacterData = (const CNetObj_DDNetCharacter *)pData;
@@ -1268,6 +1258,7 @@ void CGameClient::OnNewSnapshot()
 
 				m_aClients[Item.m_ID].m_Predicted.ReadDDNet(pCharacterData);
 			}
+			*/
 			else if(Item.m_Type == NETOBJTYPE_SPECTATORINFO)
 			{
 				m_Snap.m_pSpectatorInfo = (const CNetObj_SpectatorInfo *)pData;
@@ -1279,23 +1270,23 @@ void CGameClient::OnNewSnapshot()
 			{
 				static bool s_GameOver = 0;
 				static bool s_GamePaused = 0;
-				m_Snap.m_pGameInfoObj = (const CNetObj_GameInfo *)pData;
-				bool CurrentTickGameOver = (bool)(m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER);
+				m_Snap.m_pGameDataObj = (const CNetObj_GameInfo *)pData;
+				bool CurrentTickGameOver = (bool)(m_Snap.m_pGameDataObj->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER);
 				if(!s_GameOver && CurrentTickGameOver)
 					OnGameOver();
 				else if(s_GameOver && !CurrentTickGameOver)
 					OnStartGame();
 				// Reset statboard when new round is started (RoundStartTick changed)
 				// New round is usually started after `restart` on server
-				if(m_Snap.m_pGameInfoObj->m_RoundStartTick != m_LastRoundStartTick
+				if(m_Snap.m_pGameDataObj->m_RoundStartTick != m_LastRoundStartTick
 						// In GamePaused or GameOver state RoundStartTick is updated on each tick
 						// hence no need to reset stats until player leaves GameOver
 						// and it would be a mistake to reset stats after or during the pause
-						&& !(CurrentTickGameOver || m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED || s_GamePaused))
+						&& !(CurrentTickGameOver || m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED || s_GamePaused))
 					m_pStatboard->OnReset();
-				m_LastRoundStartTick = m_Snap.m_pGameInfoObj->m_RoundStartTick;
+				m_LastRoundStartTick = m_Snap.m_pGameDataObj->m_RoundStartTick;
 				s_GameOver = CurrentTickGameOver;
-				s_GamePaused = (bool)(m_Snap.m_pGameInfoObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED);
+				s_GamePaused = (bool)(m_Snap.m_pGameDataObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED);
 			}
 			else if(Item.m_Type == NETOBJTYPE_GAMEINFOEX)
 			{
@@ -1529,7 +1520,7 @@ void CGameClient::OnPredict()
 		return;
 
 	// don't predict anything if we are paused
-	if(m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
+	if(m_Snap.m_pGameDataObj && m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
 	{
 		if(m_Snap.m_pLocalCharacter)
 		{
@@ -1758,7 +1749,7 @@ void CGameClient::CClientData::UpdateRenderInfo()
 	m_RenderInfo = m_SkinInfo;
 
 	// force team colors
-	if(g_GameClient.m_Snap.m_pGameInfoObj && g_GameClient.m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS)
+	if(g_GameClient.m_Snap.m_pGameDataObj && g_GameClient.m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
 	{
 		m_RenderInfo.m_Texture = g_GameClient.m_pSkins->Get(m_SkinID)->m_ColorTexture;
 		const int TeamColors[2] = {65461, 10223541};
@@ -2126,7 +2117,7 @@ void CGameClient::UpdatePrediction()
 		if(m_Snap.m_aCharacters[i].m_Active)
 		{
 			bool IsLocal = (i == m_Snap.m_LocalClientID);
-			int GameTeam = (m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS) ? m_aClients[i].m_Team : i;
+			int GameTeam = (m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS) ? m_aClients[i].m_Team : i;
 			m_GameWorld.NetCharAdd(i, &m_Snap.m_aCharacters[i].m_Cur,
 					m_Snap.m_aCharacters[i].m_HasExtendedData ? &m_Snap.m_aCharacters[i].m_ExtendedData : 0,
 					GameTeam, IsLocal);

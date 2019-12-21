@@ -187,7 +187,7 @@ void CPlayers::RenderPlayer(
 
 	static float s_LastGameTickTime = Client()->GameTickTime();
 	static float s_LastPredIntraTick = Client()->PredIntraGameTick();
-	if(m_pClient->m_Snap.m_pGameInfoObj && !(m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+	if(m_pClient->m_Snap.m_pGameDataObj && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
 	{
 		s_LastGameTickTime = Client()->GameTickTime();
 		s_LastPredIntraTick = Client()->PredIntraGameTick();
@@ -418,7 +418,7 @@ void CPlayers::RenderPlayer(
 				}
 				else
 				{
-					if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
+					if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
 						IteX = s_LastIteX;
 					else
 						s_LastIteX = IteX;
@@ -480,7 +480,7 @@ void CPlayers::RenderPlayer(
 				}
 				else
 				{
-					if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
+					if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
 						IteX = s_LastIteX;
 					else
 						s_LastIteX = IteX;
@@ -620,8 +620,8 @@ void CPlayers::OnRender()
 {
 	// update RenderInfo for ninja
 	bool IsTeamplay = false;
-	if(m_pClient->m_Snap.m_pGameInfoObj)
-		IsTeamplay = (m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS) != 0;
+	if(m_pClient->m_Snap.m_pGameDataObj)
+		IsTeamplay = (m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS) != 0;
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		m_aRenderInfo[i] = m_pClient->m_aClients[i].m_RenderInfo;

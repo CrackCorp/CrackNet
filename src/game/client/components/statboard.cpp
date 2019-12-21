@@ -105,9 +105,11 @@ void CStatboard::OnMessage(int MsgType, void *pRawMsg)
 
 void CStatboard::OnRender()
 {
+	// TODO: cracknet
+	/*
 	if((g_Config.m_ClAutoStatboardScreenshot||g_Config.m_ClAutoCSV) && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 	{
-		if(m_ScreenshotTime < 0 && m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER)
+		if(m_ScreenshotTime < 0 && m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER)
 			m_ScreenshotTime = time_get() + time_freq() * 3;
 		if(m_ScreenshotTime > -1 && m_ScreenshotTime < time_get())
 			m_Active = true;
@@ -123,10 +125,13 @@ void CStatboard::OnRender()
 
 	if(IsActive())
 		RenderGlobalStats();
+	*/
 }
 
 void CStatboard::RenderGlobalStats()
 {
+	// TODO: cracknet
+	/*
 	const float StatboardWidth = 400*3.0f*Graphics()->ScreenAspect();
 	const float StatboardHeight = 400*3.0f;
 	float StatboardContentWidth = 260.0f;
@@ -146,7 +151,7 @@ void CStatboard::RenderGlobalStats()
 	}
 
 	// sort blue players by score after
-	if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS)
+	if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
 	{
 		for(int i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -167,8 +172,8 @@ void CStatboard::RenderGlobalStats()
 	if(m_pClient->m_pMotd->IsActive())
 		m_pClient->m_pMotd->Clear();
 
-	bool GameWithFlags = m_pClient->m_Snap.m_pGameInfoObj &&
-		m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_FLAGS;
+	bool GameWithFlags = m_pClient->m_Snap.m_pGameDataObj &&
+		m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_FLAGS;
 
 	StatboardContentWidth += 7 * 85 + 95; // Suicides 95; other labels 85
 
@@ -383,6 +388,7 @@ void CStatboard::RenderGlobalStats()
 		}
 		y += LineHeight;
 	}
+	*/
 }
 
 void CStatboard::AutoStatScreenshot()
@@ -443,6 +449,8 @@ char* CStatboard::ReplaceCommata(char* pStr)
 
 void CStatboard::FormatStats()
 {
+	// TODO: cracknet
+	/*
 	// server stats
 	CServerInfo CurrentServerInfo;
 	Client()->GetServerInfo(&CurrentServerInfo);
@@ -467,7 +475,7 @@ void CStatboard::FormatStats()
 	}
 
 	// sort blue players by score after
-	if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS)
+	if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
 	{
 		for (int i = 0; i < MAX_CLIENTS; i++)
 		{
@@ -507,7 +515,7 @@ void CStatboard::FormatStats()
 		bool localPlayer = (m_pClient->m_Snap.m_LocalClientID == pInfo->m_ClientID || (m_pClient->m_Snap.m_SpecInfo.m_Active && pInfo->m_ClientID == m_pClient->m_Snap.m_SpecInfo.m_SpectatorID));
 
 		// Game with flags
-		bool GameWithFlags = (m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_FLAGS);
+		bool GameWithFlags = (m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_FLAGS);
 
 		char aBuf[1024];
 		str_format(aBuf, sizeof(aBuf), "%d,%d,%s,%s,%d,%d,%d,%d,%.2f,%i,%.1f,%d,%d,%s,%d,%d,%d\n",
@@ -538,4 +546,5 @@ void CStatboard::FormatStats()
 	unsigned int Len = str_length(aStats);
 	m_pCSVstr = (char *)malloc(Len);
 	str_copy(m_pCSVstr, aStats, Len);
+	*/
 }

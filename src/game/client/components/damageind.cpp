@@ -47,6 +47,8 @@ void CDamageInd::Create(vec2 Pos, vec2 Dir)
 
 void CDamageInd::OnRender()
 {
+	/*
+	// TODO: cracknet
 	Graphics()->TextureSet(g_pData->m_aImages[IMAGE_GAME].m_Id);
 	static float s_LastLocalTime = Client()->LocalTime();
 	for(int i = 0; i < m_NumItems;)
@@ -61,7 +63,7 @@ void CDamageInd::OnRender()
 		}
 		else
 		{
-			if(m_pClient->m_Snap.m_pGameInfoObj && m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
+			if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
 				m_aItems[i].m_StartTime += Client()->LocalTime()-s_LastLocalTime;
 		}
 
@@ -81,6 +83,7 @@ void CDamageInd::OnRender()
 
 	Graphics()->QuadsSetRotation(0);
 	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
+	*/
 }
 
 void CDamageInd::OnInit()

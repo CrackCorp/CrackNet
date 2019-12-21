@@ -92,6 +92,8 @@ void CMapSounds::OnMapLoad()
 
 void CMapSounds::OnRender()
 {
+	// TODO: cracknet
+	/*
 	if(Client()->State() != IClient::STATE_ONLINE && Client()->State() != IClient::STATE_DEMOPLAYBACK)
 		return;
 
@@ -101,10 +103,10 @@ void CMapSounds::OnRender()
 		CSourceQueueEntry *pSource = &m_lSourceQueue[i];
 
 		static float s_Time = 0.0f;
-		if(m_pClient->m_Snap.m_pGameInfoObj) // && !(m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+		if(m_pClient->m_Snap.m_pGameDataObj) // && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
 		{
-			s_Time = mix((Client()->PrevGameTick()-m_pClient->m_Snap.m_pGameInfoObj->m_RoundStartTick) / (float)Client()->GameTickSpeed(),
-								(Client()->GameTick()-m_pClient->m_Snap.m_pGameInfoObj->m_RoundStartTick) / (float)Client()->GameTickSpeed(),
+			s_Time = mix((Client()->PrevGameTick()-m_pClient->m_Snap.m_pGameDataObj->m_RoundStartTick) / (float)Client()->GameTickSpeed(),
+								(Client()->GameTick()-m_pClient->m_Snap.m_pGameDataObj->m_RoundStartTick) / (float)Client()->GameTickSpeed(),
 								Client()->IntraGameTick());
 		}
 		float Offset = s_Time-pSource->m_pSource->m_TimeDelay;
@@ -220,6 +222,7 @@ void CMapSounds::OnRender()
 			}
 		}
 	}
+	*/
 }
 
 void CMapSounds::Clear()

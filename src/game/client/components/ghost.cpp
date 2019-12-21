@@ -172,7 +172,9 @@ int CGhost::FreeSlots() const
 
 void CGhost::CheckStart()
 {
-	int RaceTick = -m_pClient->m_Snap.m_pGameInfoObj->m_WarmupTimer;
+	// TODO: cracknet
+	/*
+	int RaceTick = -m_pClient->m_Snap.m_pGameDataObj->m_WarmupTimer;
 	int RenderTick = m_NewRenderTick;
 
 	if(m_LastRaceTick != RaceTick && Client()->GameTick() - RaceTick < Client()->GameTickSpeed())
@@ -194,6 +196,7 @@ void CGhost::CheckStart()
 	}
 
 	TryRenderStart(RenderTick, true);
+	*/
 }
 
 void CGhost::CheckStartLocal(bool Predicted)
@@ -259,12 +262,14 @@ void CGhost::TryRenderStart(int Tick, bool ServerControl)
 
 void CGhost::OnNewSnapshot()
 {
+	// TODO: cracknet
+	/*
 	if(!GameClient()->m_GameInfo.m_Race || Client()->State() != IClient::STATE_ONLINE)
 		return;
-	if(!m_pClient->m_Snap.m_pGameInfoObj || m_pClient->m_Snap.m_SpecInfo.m_Active || !m_pClient->m_Snap.m_pLocalCharacter || !m_pClient->m_Snap.m_pLocalPrevCharacter)
+	if(!m_pClient->m_Snap.m_pGameDataObj || m_pClient->m_Snap.m_SpecInfo.m_Active || !m_pClient->m_Snap.m_pLocalCharacter || !m_pClient->m_Snap.m_pLocalPrevCharacter)
 		return;
 
-	bool RaceFlag = m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME;
+	bool RaceFlag = m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME;
 	bool ServerControl = RaceFlag && g_Config.m_ClRaceGhostServerControl;
 
 	if(g_Config.m_ClRaceGhost)
@@ -279,22 +284,26 @@ void CGhost::OnNewSnapshot()
 	}
 
 	// Record m_LastRaceTick for g_Config.m_ClConfirmDisconnect/QuitTime anyway
-	int RaceTick = -m_pClient->m_Snap.m_pGameInfoObj->m_WarmupTimer;
+	int RaceTick = -m_pClient->m_Snap.m_pGameDataObj->m_WarmupTimer;
 	m_LastRaceTick = RaceFlag ? RaceTick : -1;
+	*/
 }
 
 void CGhost::OnNewPredictedSnapshot()
 {
+	// TODO: cracknet
+	/*
 	if(!GameClient()->m_GameInfo.m_Race || !g_Config.m_ClRaceGhost || Client()->State() != IClient::STATE_ONLINE)
 		return;
-	if(!m_pClient->m_Snap.m_pGameInfoObj || m_pClient->m_Snap.m_SpecInfo.m_Active || !m_pClient->m_Snap.m_pLocalCharacter || !m_pClient->m_Snap.m_pLocalPrevCharacter)
+	if(!m_pClient->m_Snap.m_pGameDataObj || m_pClient->m_Snap.m_SpecInfo.m_Active || !m_pClient->m_Snap.m_pLocalCharacter || !m_pClient->m_Snap.m_pLocalPrevCharacter)
 		return;
 
-	bool RaceFlag = m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME;
+	bool RaceFlag = m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME;
 	bool ServerControl = RaceFlag && g_Config.m_ClRaceGhostServerControl;
 
 	if(!ServerControl)
 		CheckStartLocal(true);
+	*/
 }
 
 void CGhost::OnRender()
@@ -370,6 +379,8 @@ void CGhost::InitRenderInfos(CGhostItem *pGhost)
 
 void CGhost::StartRecord(int Tick)
 {
+	// TODO: cracknet
+	/*
 	m_Recording = true;
 	m_CurGhost.Reset();
 	m_CurGhost.m_StartTick = Tick;
@@ -378,6 +389,7 @@ void CGhost::StartRecord(int Tick)
 	str_copy(m_CurGhost.m_aPlayer, g_Config.m_PlayerName, sizeof(m_CurGhost.m_aPlayer));
 	GetGhostSkin(&m_CurGhost.m_Skin, pData->m_aSkinName, pData->m_UseCustomColor, pData->m_ColorBody, pData->m_ColorFeet);
 	InitRenderInfos(&m_CurGhost);
+	*/
 }
 
 void CGhost::StopRecord(int Time)
@@ -575,6 +587,8 @@ void CGhost::OnConsoleInit()
 
 void CGhost::OnMessage(int MsgType, void *pRawMsg)
 {
+	// TODO: cracknet
+	/*
 	// check for messages from server
 	if(MsgType == NETMSGTYPE_SV_KILLMSG)
 	{
@@ -601,6 +615,7 @@ void CGhost::OnMessage(int MsgType, void *pRawMsg)
 			}
 		}
 	}
+	*/
 }
 
 void CGhost::OnReset()

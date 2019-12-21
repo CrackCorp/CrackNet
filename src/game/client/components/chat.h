@@ -51,6 +51,8 @@ class CChat : public CComponent
 	};
 
 	int m_Mode;
+	int m_WhisperTarget;
+	int m_LastWhisperFrom;
 	bool m_Show;
 	bool m_InputUpdate;
 	int m_ChatStringOffset;
@@ -98,7 +100,7 @@ public:
 	bool IsActive() const { return m_Mode != MODE_NONE; }
 	void AddLine(int ClientID, int Team, const char *pLine);
 	void EnableMode(int Team);
-	void Say(int Team, const char *pLine);
+	void Say(int Mode, const char *pLine);
 	void SayChat(const char *pLine);
 	void RegisterCommand(const char *pName, const char *pParams, int flags, const char *pHelp);
 	void Echo(const char *pString);

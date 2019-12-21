@@ -2,6 +2,9 @@
 #define GAME_MAPITEMS_EX_H
 #include <game/generated/protocol.h>
 
+// TODO: cracknet remove
+#define OFFSET_MAPITEMTYPE_UUID 1
+
 enum
 {
 	__MAPITEMTYPE_UUID_HELPER=OFFSET_MAPITEMTYPE_UUID-1,

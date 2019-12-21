@@ -51,17 +51,19 @@ void CRaceDemo::OnStateChange(int NewState, int OldState)
 
 void CRaceDemo::OnNewSnapshot()
 {
+	// TODO: cracknet
+	/*
 	if(!GameClient()->m_GameInfo.m_Race || !g_Config.m_ClAutoRaceRecord || Client()->State() != IClient::STATE_ONLINE)
 		return;
 
-	if(!m_pClient->m_Snap.m_pGameInfoObj || m_pClient->m_Snap.m_SpecInfo.m_Active || !m_pClient->m_Snap.m_pLocalCharacter || !m_pClient->m_Snap.m_pLocalPrevCharacter)
+	if(!m_pClient->m_Snap.m_pGameDataObj || m_pClient->m_Snap.m_SpecInfo.m_Active || !m_pClient->m_Snap.m_pLocalCharacter || !m_pClient->m_Snap.m_pLocalPrevCharacter)
 		return;
 
 	static int s_LastRaceTick = -1;
 
-	bool RaceFlag = m_pClient->m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME;
+	bool RaceFlag = m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME;
 	bool ServerControl = RaceFlag && g_Config.m_ClRaceRecordServerControl;
-	int RaceTick = -m_pClient->m_Snap.m_pGameInfoObj->m_WarmupTimer;
+	int RaceTick = -m_pClient->m_Snap.m_pGameDataObj->m_WarmupTimer;
 
 	// start the demo
 	bool ForceStart = ServerControl && s_LastRaceTick != RaceTick && Client()->GameTick() - RaceTick < Client()->GameTickSpeed();
@@ -106,6 +108,7 @@ void CRaceDemo::OnNewSnapshot()
 		StopRecord(m_Time);
 
 	s_LastRaceTick = RaceFlag ? RaceTick : -1;
+	*/
 }
 
 void CRaceDemo::OnReset()
@@ -115,6 +118,8 @@ void CRaceDemo::OnReset()
 
 void CRaceDemo::OnMessage(int MsgType, void *pRawMsg)
 {
+	// TODO: cracknet
+	/*
 	// check for messages from server
 	if(MsgType == NETMSGTYPE_SV_KILLMSG)
 	{
@@ -137,6 +142,7 @@ void CRaceDemo::OnMessage(int MsgType, void *pRawMsg)
 			}
 		}
 	}
+	*/
 }
 
 void CRaceDemo::OnMapLoad()

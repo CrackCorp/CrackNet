@@ -21,11 +21,11 @@ void CPickup::Tick()
 			// player picked us up, is someone was hooking us, let them go
 			switch (m_Type)
 			{
-				case POWERUP_HEALTH:
+				case PICKUP_HEALTH:
 					//pChr->Freeze();
 					break;
 
-				case POWERUP_ARMOR:
+				case PICKUP_ARMOR:
 					if(!GameWorld()->m_WorldConfig.m_IsDDRace || !GameWorld()->m_WorldConfig.m_PredictDDRace)
 						continue;
 					if(pChr->m_Super)
@@ -51,12 +51,15 @@ void CPickup::Tick()
 						pChr->SetActiveWeapon(WEAPON_HAMMER);
 					break;
 
-				case POWERUP_WEAPON:
+				// TODO: cracknet
+				/*
+				case PICKUP_WEAPON:
 					if(m_Subtype >= 0 && m_Subtype < NUM_WEAPONS && (!pChr->GetWeaponGot(m_Subtype) || (pChr->GetWeaponAmmo(m_Subtype) != -1 && !pChr->m_FreezeTime)))
 						pChr->GiveWeapon(m_Subtype, -1);
 					break;
+				*/
 
-				case POWERUP_NINJA:
+				case PICKUP_NINJA:
 					{
 						// activate ninja on target player
 						pChr->GiveNinja();
@@ -90,7 +93,8 @@ CPickup::CPickup(CGameWorld *pGameWorld, int ID, CNetObj_Pickup *pPickup)
 	m_Pos.x = pPickup->m_X;
 	m_Pos.y = pPickup->m_Y;
 	m_Type = pPickup->m_Type;
-	m_Subtype = pPickup->m_Subtype;
+	// TODO: cracknet
+	// m_Subtype = pPickup->m_Subtype;
 	m_Core = vec2(0.f, 0.f);
 	m_ID = ID;
 	m_Layer = LAYER_GAME;
@@ -102,7 +106,8 @@ void CPickup::FillInfo(CNetObj_Pickup *pPickup)
 	pPickup->m_X = (int)m_Pos.x;
 	pPickup->m_Y = (int)m_Pos.y;
 	pPickup->m_Type = m_Type;
-	pPickup->m_Subtype = m_Subtype;
+	// TODO: cracknet
+	// pPickup->m_Subtype = m_Subtype;
 }
 
 bool CPickup::Match(CPickup *pPickup)
