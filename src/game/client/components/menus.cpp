@@ -1618,11 +1618,14 @@ void CMenus::SetActive(bool Active)
 	m_MenuActive = Active;
 	if(!m_MenuActive)
 	{
+		// TODO: cracknet
+		/*
 		if(m_NeedSendinfo)
 		{
 			m_pClient->SendInfo(false);
 			m_NeedSendinfo = false;
 		}
+		*/
 
 		if(m_NeedSendDummyinfo)
 		{

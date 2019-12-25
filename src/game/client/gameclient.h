@@ -234,6 +234,8 @@ public:
 		const CNetObj_PlayerInfo *m_paPlayerInfos[MAX_CLIENTS];
 		const CNetObj_PlayerInfoRace *m_paPlayerInfosRace[MAX_CLIENTS];
 		CPlayerInfoItem m_aInfoByScore[MAX_CLIENTS];
+		const CNetObj_PlayerInfo *m_paInfoByName[MAX_CLIENTS]; // TODO: cracknet
+
 
 		// spectate data
 		struct CSpectateInfo

@@ -7,4 +7,7 @@
 #define GAME_RELEASE_VERSION "12.8"
 #define CLIENT_VERSIONNR 12080
 extern const char *GIT_SHORTREV_HASH;
+
+#define CRACKNET_VERSION "0001"
+
 #endif
