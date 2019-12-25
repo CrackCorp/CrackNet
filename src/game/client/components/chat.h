@@ -98,7 +98,7 @@ public:
 	CChat();
 
 	bool IsActive() const { return m_Mode != MODE_NONE; }
-	void AddLine(int ClientID, int Team, const char *pLine);
+	void AddLine(int ClientID, int Team, const char *pLine, int TargetID);
 	void EnableMode(int Team);
 	void Say(int Mode, const char *pLine);
 	void SayChat(const char *pLine);

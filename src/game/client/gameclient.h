@@ -91,6 +91,10 @@ public:
 	bool m_Race;
 
 	bool m_DontMaskEntities;
+
+	// TODO: cracknet
+	// unused vars
+	int m_GameFlags;
 };
 
 class CGameClient : public IGameClient
@@ -333,6 +337,9 @@ public:
 	};
 
 	CClientData m_aClients[MAX_CLIENTS];
+	// TODO: cracknet
+	// fill m_LocalClientID with a value
+	int m_LocalClientID;
 
 	class CClientStats
 	{

@@ -143,7 +143,9 @@ void CChat::ConEcho(IConsole::IResult *pResult, void *pUserData)
 
 void CChat::Echo(const char *pString)
 {
-	AddLine(-2, 0, pString);
+	// TODO: cracknet
+	// make sure targetid is correct
+	AddLine(-2, 0, pString, -1);
 }
 
 void CChat::OnConsoleInit()
@@ -401,11 +403,13 @@ bool CChat::OnInput(IInput::CEvent Event)
 					Index = (m_CompletionChosen+i)%MAX_CLIENTS;
 				}
 
-
-				if(!m_pClient->m_Snap.m_paInfoByName[Index])
+				// TODO: cracknet
+				/*
+				if(!m_pClient->m_Snap.m_aInfoByScore[Index])
 					continue;
+				*/
 
-				int Index2 = m_pClient->m_Snap.m_paInfoByName[Index]->m_ClientID;
+				int Index2 = m_pClient->m_Snap.m_aInfoByScore[Index].m_ClientID;
 
 				bool Found = false;
 				if(SearchType == 1)
@@ -527,8 +531,30 @@ void CChat::OnMessage(int MsgType, void *pRawMsg)
 	if(MsgType == NETMSGTYPE_SV_CHAT)
 	{
 		CNetMsg_Sv_Chat *pMsg = (CNetMsg_Sv_Chat *)pRawMsg;
-		AddLine(pMsg->m_ClientID, pMsg->m_Team, pMsg->m_pMessage);
+		AddLine(pMsg->m_ClientID, pMsg->m_Mode, pMsg->m_pMessage, pMsg->m_TargetID);
 	}
+	/*
+	else if(MsgType == NETMSGTYPE_SV_COMMANDINFO)
+	{
+		CNetMsg_Sv_CommandInfo *pMsg = (CNetMsg_Sv_CommandInfo *)pRawMsg;
+		if(!m_Commands.GetCommandByName(pMsg->m_pName))
+		{
+			dbg_msg("chat_commands", "adding server chat command: name='%s' args='%s' help='%s'", pMsg->m_pName, pMsg->m_ArgsFormat, pMsg->m_HelpText);
+			m_Commands.AddCommand(pMsg->m_pName, pMsg->m_ArgsFormat, pMsg->m_HelpText, 0);
+		}
+	}
+	else if(MsgType == NETMSGTYPE_SV_COMMANDINFOREMOVE)
+	{
+		CNetMsg_Sv_CommandInfoRemove *pMsg = (CNetMsg_Sv_CommandInfoRemove *)pRawMsg;
+		
+		CChatCommand *pCommand = m_Commands.GetCommandByName(pMsg->m_pName);
+
+		if(pCommand) {
+			mem_zero(pCommand, sizeof(CChatCommand));
+			dbg_msg("chat_commands", "removed chat command: name='%s'", pMsg->m_pName);
+		}
+	}
+	*/
 }
 
 bool CChat::LineShouldHighlight(const char *pLine, const char *pName)
@@ -547,8 +573,14 @@ bool CChat::LineShouldHighlight(const char *pLine, const char *pName)
 	return false;
 }
 
-void CChat::AddLine(int ClientID, int Team, const char *pLine)
+// TODO: cracknet
+// TargetID is currently unused
+void CChat::AddLine(int ClientID, int Team, const char *pLine, int TargetID)
 {
+	if(*pLine == 0 || ClientID == -1)
+		return;
+	// TODO: cracknet
+	/*
 	if(*pLine == 0 ||
 		(ClientID == -1 && !g_Config.m_ClShowChatSystem) ||
 		(ClientID >= 0 && (m_pClient->m_aClients[ClientID].m_aName[0] == '\0' || // unknown client
@@ -556,6 +588,7 @@ void CChat::AddLine(int ClientID, int Team, const char *pLine)
 		(m_pClient->m_Snap.m_LocalClientID != ClientID && g_Config.m_ClShowChatFriends && !m_pClient->m_aClients[ClientID].m_Friend) ||
 		(m_pClient->m_Snap.m_LocalClientID != ClientID && m_pClient->m_aClients[ClientID].m_Foe))))
 		return;
+	*/
 
 	// trim right and set maximum length to 256 utf8-characters
 	int Length = 0;
@@ -628,7 +661,7 @@ void CChat::AddLine(int ClientID, int Team, const char *pLine)
 		{
 			// on demo playback use local id from snap directly,
 			// since m_LocalIDs isn't valid there
-			if(LineShouldHighlight(pLine, m_pClient->m_aClients[m_pClient->m_Snap.m_LocalClientID].m_aName))
+			if(LineShouldHighlight(pLine, m_pClient->m_aClients[m_pClient->m_LocalClientID].m_aName))
 				Highlighted = true;
 		}
 
@@ -645,7 +678,7 @@ void CChat::AddLine(int ClientID, int Team, const char *pLine)
 			if(m_pClient->m_aClients[ClientID].m_Team == TEAM_SPECTATORS)
 				m_aLines[m_CurrentLine].m_NameColor = TEAM_SPECTATORS;
 
-			if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
+			if(m_pClient->m_GameInfo.m_GameFlags && m_pClient->m_GameInfo.m_GameFlags&GAMEFLAG_TEAMS)
 			{
 				if(m_pClient->m_aClients[ClientID].m_Team == TEAM_RED)
 					m_aLines[m_CurrentLine].m_NameColor = TEAM_RED;
