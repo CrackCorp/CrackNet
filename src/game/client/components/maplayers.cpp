@@ -94,9 +94,12 @@ void CMapLayers::EnvelopeEval(float TimeOffset, int Env, float *pChannels, void 
 			}
 			if(pItem->m_Version < 2 || pItem->m_Synchronized)
 			{
+				// TODO: cracknet
+				/*
 				s_Time = mix((pThis->Client()->PrevGameTick()-pThis->m_pClient->m_Snap.m_pGameDataObj->m_RoundStartTick) / (float)pThis->Client()->GameTickSpeed(),
 							(pThis->Client()->GameTick()-pThis->m_pClient->m_Snap.m_pGameDataObj->m_RoundStartTick) / (float)pThis->Client()->GameTickSpeed(),
 							pThis->Client()->IntraGameTick());
+				*/
 			}
 			else
 			{
@@ -109,13 +112,16 @@ void CMapLayers::EnvelopeEval(float TimeOffset, int Env, float *pChannels, void 
 	}
 	else
 	{
-		if(pThis->m_pClient->m_Snap.m_pGameDataObj) // && !(pThis->m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
+		if(pThis->m_pClient->m_Snap.m_pGameData) // && !(pThis->m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED))
 		{
 			if(pItem->m_Version < 2 || pItem->m_Synchronized)
 			{
+				// TODO: cracknet
+				/*
 				s_Time = mix((pThis->Client()->PrevGameTick()-pThis->m_pClient->m_Snap.m_pGameDataObj->m_RoundStartTick) / (float)pThis->Client()->GameTickSpeed(),
 							(pThis->Client()->GameTick()-pThis->m_pClient->m_Snap.m_pGameDataObj->m_RoundStartTick) / (float)pThis->Client()->GameTickSpeed(),
 							pThis->Client()->IntraGameTick());
+				*/
 			}
 			else
 				s_Time += pThis->Client()->LocalTime()-s_LastLocalTime;
