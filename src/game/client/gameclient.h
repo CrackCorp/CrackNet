@@ -93,8 +93,15 @@ public:
 	bool m_DontMaskEntities;
 
 	// TODO: cracknet
-	// unused vars
+	// 0.7 vars
 	int m_GameFlags;
+	int m_ScoreLimit;
+	int m_TimeLimit;
+	int m_MatchNum;
+	int m_MatchCurrent;
+
+	int m_NumPlayers;
+	int m_aTeamSize[NUM_TEAMS];
 };
 
 class CGameClient : public IGameClient
@@ -199,6 +206,7 @@ public:
 	int m_ServerMode;
 	CGameInfo m_GameInfo;
 
+	int m_DemoSpecMode;
 	int m_DemoSpecID;
 
 	vec2 m_LocalCharacterPos;
@@ -275,9 +283,13 @@ public:
 		char m_aName[MAX_NAME_LENGTH];
 		char m_aClan[MAX_CLAN_LENGTH];
 		int m_Country;
-		char m_aSkinName[64];
-		int m_SkinID;
-		int m_SkinColor;
+		char m_aSkinName[64]; // TODO: cracknet remove
+		int m_SkinID; // TODO: cracknet remove
+		int m_SkinColor; // TODO: cracknet remove
+		char m_aaSkinPartNames[NUM_SKINPARTS][24];
+		int m_aUseCustomColors[NUM_SKINPARTS];
+		int m_aSkinPartColors[NUM_SKINPARTS];
+		int m_SkinPartIDs[NUM_SKINPARTS];
 		int m_Team;
 		int m_Emoticon;
 		int m_EmoticonStart;

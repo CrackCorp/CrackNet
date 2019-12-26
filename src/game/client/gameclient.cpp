@@ -66,6 +66,8 @@
 #include "components/race_demo.h"
 #include "components/ghost.h"
 
+#define AUTHED_NO 0
+
 CGameClient g_GameClient;
 
 // instantiate all systems
@@ -508,7 +510,7 @@ void CGameClient::OnReset()
 	for(int i = 0; i < m_All.m_Num; i++)
 		m_All.m_paComponents[i]->OnReset();
 
-	m_DemoSpecID = SPEC_FOLLOW;
+	m_DemoSpecID = -1;
 	m_FlagDropTick[TEAM_RED] = 0;
 	m_FlagDropTick[TEAM_BLUE] = 0;
 	m_LastRoundStartTick = -1;
@@ -733,6 +735,8 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy)
 
 	if(IsDummy)
 	{
+		// TODO: cracknet
+		/*
 		if(MsgId == NETMSGTYPE_SV_CHAT
 			&& m_LocalIDs[0] >= 0
 			&& m_LocalIDs[1] >= 0)
@@ -747,6 +751,7 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy)
 				m_pChat->OnMessage(MsgId, pRawMsg);
 			}
 		}
+		*/
 		return; // no need of all that stuff for the dummy
 	}
 
@@ -788,7 +793,6 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy)
 				g_GameClient.m_pSounds->Play(CSounds::CHN_GLOBAL, pMsg->m_SoundID, 1.0f);
 		}
 	}
-	*/
 	else if(MsgId == NETMSGTYPE_SV_TEAMSSTATE)
 	{
 		unsigned int i;
@@ -824,6 +828,7 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy)
 		CNetMsg_Sv_PlayerTime *pMsg = (CNetMsg_Sv_PlayerTime *)pRawMsg;
 		m_aClients[pMsg->m_ClientID].m_Score = pMsg->m_Time;
 	}
+	*/
 	else if(MsgId == NETMSGTYPE_SV_KILLMSG)
 	{
 		CNetMsg_Sv_KillMsg *pMsg = (CNetMsg_Sv_KillMsg *)pRawMsg;
@@ -876,10 +881,13 @@ void CGameClient::OnStartGame()
 
 void CGameClient::OnFlagGrab(int TeamID)
 {
+	// TODO: cracknet
+	/*
 	if(TeamID == TEAM_RED)
 		m_aStats[m_Snap.m_pGameDataObj->m_FlagCarrierRed].m_FlagGrabs++;
 	else
 		m_aStats[m_Snap.m_pGameDataObj->m_FlagCarrierBlue].m_FlagGrabs++;
+	*/
 }
 
 void CGameClient::OnWindowResize()
@@ -918,9 +926,11 @@ void CGameClient::ProcessEvents()
 		IClient::CSnapItem Item;
 		const void *pData = Client()->SnapGetItem(SnapType, Index, &Item);
 
-		if(Item.m_Type == NETEVENTTYPE_DAMAGEIND)
+		if(Item.m_Type == NETEVENTTYPE_DAMAGE)
 		{
-			CNetEvent_DamageInd *ev = (CNetEvent_DamageInd *)pData;
+			CNetEvent_Damage *ev = (CNetEvent_Damage *)pData;
+			// TODO: cracknet
+			// m_pEffects->DamageIndicator(vec2(ev->m_X, ev->m_Y), ev->m_HealthAmount + ev->m_ArmorAmount);
 			g_GameClient.m_pEffects->DamageIndicator(vec2(ev->m_X, ev->m_Y), GetDirection(ev->m_Angle));
 		}
 		else if(Item.m_Type == NETEVENTTYPE_EXPLOSION)
@@ -952,10 +962,10 @@ void CGameClient::ProcessEvents()
 	}
 }
 
+// TODO: cracknet
+/*
 static CGameInfo GetGameInfo(const CNetObj_GameInfoEx *pInfoEx, int InfoExSize, CServerInfo *pFallbackServerInfo)
 {
-	// TODO: cracknet
-	/*
 	int Version = -1;
 	if(InfoExSize >= 8)
 	{
@@ -1062,10 +1072,9 @@ static CGameInfo GetGameInfo(const CNetObj_GameInfoEx *pInfoEx, int InfoExSize, 
 		Info.m_Race = Flags&GAMEINFOFLAG_RACE;
 		Info.m_DontMaskEntities = Flags&GAMEINFOFLAG_DONT_MASK_ENTITIES;
 	}
-	*/
-	CGameInfo Info;
 	return Info;
 }
+*/
 
 void CGameClient::OnNewSnapshot()
 {
@@ -1120,7 +1129,8 @@ void CGameClient::OnNewSnapshot()
 
 	// go trough all the items in the snapshot and gather the info we want
 	{
-		m_Snap.m_aTeamSize[TEAM_RED] = m_Snap.m_aTeamSize[TEAM_BLUE] = 0;
+		// TODO: cracknet
+		// m_Snap.m_aTeamSize[TEAM_RED] = m_Snap.m_aTeamSize[TEAM_BLUE] = 0;
 
 		int Num = Client()->SnapNumItems(IClient::SNAP_CURRENT);
 		for(int i = 0; i < Num; i++)
@@ -1157,37 +1167,30 @@ void CGameClient::OnNewSnapshot()
 						m_GameInfo.m_aTeamSize[pClient->m_Team]++;
 				}
 			}
-			else if(Item.m_Type == NETOBJTYPE_PLAYERINFO)
+			if(Item.m_Type == NETOBJTYPE_PLAYERINFO)
 			{
 				const CNetObj_PlayerInfo *pInfo = (const CNetObj_PlayerInfo *)pData;
-
-				m_aClients[pInfo->m_ClientID].m_Team = pInfo->m_Team;
-				m_aClients[pInfo->m_ClientID].m_Active = true;
-				m_Snap.m_paPlayerInfos[pInfo->m_ClientID] = pInfo;
-				m_Snap.m_NumPlayers++;
-
-				if(pInfo->m_Local)
+				int ClientID = Item.m_ID;
+				if(ClientID < MAX_CLIENTS && m_aClients[ClientID].m_Active)
 				{
-					m_LocalClientID = Item.m_ID;
-					m_Snap.m_pLocalInfo = pInfo;
+					m_Snap.m_paPlayerInfos[ClientID] = pInfo;
+					m_Snap.m_aInfoByScore[ClientID].m_pPlayerInfo = pInfo;
+					m_Snap.m_aInfoByScore[ClientID].m_ClientID = ClientID;
 
-					if(pInfo->m_Team == TEAM_SPECTATORS)
+					if(m_LocalClientID == ClientID)
 					{
-						m_Snap.m_SpecInfo.m_Active = true;
-						m_Snap.m_SpecInfo.m_SpectatorID = SPEC_FREEVIEW;
+						m_Snap.m_pLocalInfo = pInfo;
+
+						if(m_aClients[ClientID].m_Team == TEAM_SPECTATORS)
+						{
+							m_Snap.m_SpecInfo.m_Active = true;
+							m_Snap.m_SpecInfo.m_SpecMode = SPEC_FREEVIEW;
+							m_Snap.m_SpecInfo.m_SpectatorID = -1;
+						}
 					}
+					// TODO: cracknet
+					// m_aClients[ClientID].UpdateBotRenderInfo(this, ClientID);
 				}
-
-				// calculate team-balance
-				if(pInfo->m_Team != TEAM_SPECTATORS)
-				{
-					m_Snap.m_aTeamSize[pInfo->m_Team]++;
-					if(!m_aStats[pInfo->m_ClientID].IsActive())
-						m_aStats[pInfo->m_ClientID].JoinGame(Client()->GameTick());
-				}
-				else if(m_aStats[pInfo->m_ClientID].IsActive())
-					m_aStats[pInfo->m_ClientID].JoinSpec(Client()->GameTick());
-
 			}
 			// TODO: cracknet
 			/*
@@ -1272,28 +1275,18 @@ void CGameClient::OnNewSnapshot()
 
 				m_Snap.m_SpecInfo.m_SpectatorID = m_Snap.m_pSpectatorInfo->m_SpectatorID;
 			}
-			else if(Item.m_Type == NETOBJTYPE_GAMEINFO)
+			else if(Item.m_Type == NETOBJTYPE_DE_GAMEINFO)
 			{
-				static bool s_GameOver = 0;
-				static bool s_GamePaused = 0;
-				m_Snap.m_pGameDataObj = (const CNetObj_GameInfo *)pData;
-				bool CurrentTickGameOver = (bool)(m_Snap.m_pGameDataObj->m_GameStateFlags & GAMESTATEFLAG_GAMEOVER);
-				if(!s_GameOver && CurrentTickGameOver)
-					OnGameOver();
-				else if(s_GameOver && !CurrentTickGameOver)
-					OnStartGame();
-				// Reset statboard when new round is started (RoundStartTick changed)
-				// New round is usually started after `restart` on server
-				if(m_Snap.m_pGameDataObj->m_RoundStartTick != m_LastRoundStartTick
-						// In GamePaused or GameOver state RoundStartTick is updated on each tick
-						// hence no need to reset stats until player leaves GameOver
-						// and it would be a mistake to reset stats after or during the pause
-						&& !(CurrentTickGameOver || m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED || s_GamePaused))
-					m_pStatboard->OnReset();
-				m_LastRoundStartTick = m_Snap.m_pGameDataObj->m_RoundStartTick;
-				s_GameOver = CurrentTickGameOver;
-				s_GamePaused = (bool)(m_Snap.m_pGameDataObj->m_GameStateFlags & GAMESTATEFLAG_PAUSED);
+				const CNetObj_De_GameInfo *pInfo = (const CNetObj_De_GameInfo *)pData;
+
+				m_GameInfo.m_GameFlags = pInfo->m_GameFlags;
+				m_GameInfo.m_ScoreLimit = pInfo->m_ScoreLimit;
+				m_GameInfo.m_TimeLimit = pInfo->m_TimeLimit;
+				m_GameInfo.m_MatchNum = pInfo->m_MatchNum;
+				m_GameInfo.m_MatchCurrent = pInfo->m_MatchCurrent;
 			}
+			// TODO: cracknet
+			/*
 			else if(Item.m_Type == NETOBJTYPE_GAMEINFOEX)
 			{
 				if(FoundGameInfoEx)
@@ -1305,43 +1298,48 @@ void CGameClient::OnNewSnapshot()
 				Client()->GetServerInfo(&ServerInfo);
 				m_GameInfo = GetGameInfo((const CNetObj_GameInfoEx *)pData, Client()->SnapItemSize(IClient::SNAP_CURRENT, i), &ServerInfo);
 			}
+			*/
 			else if(Item.m_Type == NETOBJTYPE_GAMEDATA)
 			{
-				m_Snap.m_pGameDataObj = (const CNetObj_GameData *)pData;
-				m_Snap.m_GameDataSnapID = Item.m_ID;
-				if(m_Snap.m_pGameDataObj->m_FlagCarrierRed == FLAG_TAKEN)
+				m_Snap.m_pGameDataFlag = (const CNetObj_GameDataFlag *)pData;
+				m_Snap.m_GameDataFlagSnapID = Item.m_ID;
+
+				if(m_Snap.m_pGameDataFlag->m_FlagCarrierRed == FLAG_TAKEN)
 				{
 					if(m_FlagDropTick[TEAM_RED] == 0)
 						m_FlagDropTick[TEAM_RED] = Client()->GameTick();
 				}
 				else if(m_FlagDropTick[TEAM_RED] != 0)
 						m_FlagDropTick[TEAM_RED] = 0;
-				if(m_Snap.m_pGameDataObj->m_FlagCarrierBlue == FLAG_TAKEN)
+				if(m_Snap.m_pGameDataFlag->m_FlagCarrierBlue == FLAG_TAKEN)
 				{
 					if(m_FlagDropTick[TEAM_BLUE] == 0)
 						m_FlagDropTick[TEAM_BLUE] = Client()->GameTick();
 				}
 				else if(m_FlagDropTick[TEAM_BLUE] != 0)
 						m_FlagDropTick[TEAM_BLUE] = 0;
-				if(m_LastFlagCarrierRed == FLAG_ATSTAND && m_Snap.m_pGameDataObj->m_FlagCarrierRed >= 0)
+				if(m_LastFlagCarrierRed == FLAG_ATSTAND && m_Snap.m_pGameDataFlag->m_FlagCarrierRed >= 0)
 					OnFlagGrab(TEAM_RED);
-				else if(m_LastFlagCarrierBlue == FLAG_ATSTAND && m_Snap.m_pGameDataObj->m_FlagCarrierBlue >= 0)
+				else if(m_LastFlagCarrierBlue == FLAG_ATSTAND && m_Snap.m_pGameDataFlag->m_FlagCarrierBlue >= 0)
 					OnFlagGrab(TEAM_BLUE);
 
-				m_LastFlagCarrierRed = m_Snap.m_pGameDataObj->m_FlagCarrierRed;
-				m_LastFlagCarrierBlue = m_Snap.m_pGameDataObj->m_FlagCarrierBlue;
+				m_LastFlagCarrierRed = m_Snap.m_pGameDataFlag->m_FlagCarrierRed;
+				m_LastFlagCarrierBlue = m_Snap.m_pGameDataFlag->m_FlagCarrierBlue;
 			}
 			else if(Item.m_Type == NETOBJTYPE_FLAG)
 				m_Snap.m_paFlags[Item.m_ID%2] = (const CNetObj_Flag *)pData;
 		}
 	}
 
+	// TODO: cracknet
+	/*
 	if(!FoundGameInfoEx)
 	{
 		CServerInfo ServerInfo;
 		Client()->GetServerInfo(&ServerInfo);
 		m_GameInfo = GetGameInfo(0, 0, &ServerInfo);
 	}
+	*/
 
 	// setup local pointers
 	if(m_LocalClientID >= 0)
@@ -1409,6 +1407,8 @@ void CGameClient::OnNewSnapshot()
 			|| !Foes()->IsFriend(m_aClients[i].m_aName, m_aClients[i].m_aClan, true));
 	}
 
+	// TODO: cracknet
+	/*
 	// sort player infos by name
 	mem_copy(m_Snap.m_paInfoByName, m_Snap.m_paPlayerInfos, sizeof(m_Snap.m_paInfoByName));
 	std::stable_sort(m_Snap.m_paInfoByName, m_Snap.m_paInfoByName + MAX_CLIENTS,
@@ -1424,8 +1424,8 @@ void CGameClient::OnNewSnapshot()
 	bool TimeScore = m_GameInfo.m_TimeScore;
 
 	// sort player infos by score
-	mem_copy(m_Snap.m_aInfoByScore, m_Snap.m_paInfoByName, sizeof(m_Snap.m_aInfoByScore));
-	std::stable_sort(m_Snap.m_aInfoByScore, m_Snap.m_aInfoByScore + MAX_CLIENTS,
+	mem_copy(m_Snap.m_paInfoByScore, m_Snap.m_paInfoByName, sizeof(m_Snap.m_paInfoByScore));
+	std::stable_sort(m_Snap.m_paInfoByScore, m_Snap.m_paInfoByScore + MAX_CLIENTS,
 		[TimeScore](const CNetObj_PlayerInfo* p1, const CNetObj_PlayerInfo* p2) -> bool
 		{
 			if (!p2)
@@ -1446,6 +1446,7 @@ void CGameClient::OnNewSnapshot()
 				m_Snap.m_paInfoByDDTeam[Index++] = m_Snap.m_aInfoByScore[i];
 		}
 	}
+	*/
 
 	CServerInfo CurrentServerInfo;
 	Client()->GetServerInfo(&CurrentServerInfo);
@@ -1543,7 +1544,7 @@ void CGameClient::OnPredict()
 		return;
 
 	// don't predict anything if we are paused
-	if(m_Snap.m_pGameDataObj && m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
+	if(m_Snap.m_pGameData->m_GameStateFlags && m_Snap.m_pGameData->m_GameStateFlags&GAMESTATEFLAG_PAUSED)
 	{
 		if(m_Snap.m_pLocalCharacter)
 		{
@@ -1772,7 +1773,7 @@ void CGameClient::CClientData::UpdateRenderInfo()
 	m_RenderInfo = m_SkinInfo;
 
 	// force team colors
-	if(g_GameClient.m_Snap.m_pGameDataObj && g_GameClient.m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
+	if(g_GameClient.m_GameInfo.m_GameFlags&GAMEFLAG_TEAMS)
 	{
 		m_RenderInfo.m_Texture = g_GameClient.m_pSkins->Get(m_SkinID)->m_ColorTexture;
 		const int TeamColors[2] = {65461, 10223541};
@@ -1843,14 +1844,14 @@ void CGameClient::SendSwitchTeam(int Team)
 		m_pCamera->OnReset();
 }
 
-void CGameClient::SendStartInfo(bool IsDummy)
+void CGameClient::SendInfo(bool IsDummy)
 {
 	CNetMsg_Cl_StartInfo Msg;
 	Msg.m_pName = g_Config.m_PlayerName;
 	Msg.m_pClan = g_Config.m_PlayerClan;
 	Msg.m_Country = g_Config.m_PlayerCountry;
 	char aClientStr[32];
-	str_format(aClientStr, sizeof(aClientStr), "zilly!%s", ZILLYWOODS_VERSION);
+	str_format(aClientStr, sizeof(aClientStr), "cracknet!%s", CRACKNET_VERSION);
 	for(int p = 0; p < NUM_SKINPARTS; p++)
 	{
 		if((p >= NUM_SKINPARTS-2) && !str_comp(CSkins::ms_apSkinVariables[p], "standard"))
@@ -1862,12 +1863,15 @@ void CGameClient::SendStartInfo(bool IsDummy)
 	}
 	if(IsDummy)
 	{
-		Msg.m_pName = g_Config.m_DummyName;
-		Msg.m_pClan = g_Config.m_DummyClan;
-		Msg.m_Country = g_Config.m_DummyCountry;
+		// TODO: cracknet
+		/*
+		Msg.m_pName = g_Config.m_ClDummyName;
+		Msg.m_pClan = g_Config.m_ClDummyClan;
+		Msg.m_Country = g_Config.m_ClDummyCountry;
 		CMsgPacker Packer(Msg.MsgID(), false);
 		Msg.Pack(&Packer);
 		Client()->SendMsgExY(&Packer, MSGFLAG_VITAL|MSGFLAG_FLUSH, 1);
+		*/
 	}
 	else
 		Client()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_FLUSH);
@@ -1892,12 +1896,14 @@ void CGameClient::SendDummyInfo(bool Start)
 	}
 	if(Start) // TODO: cracknet
 	{
+		/*
 		Msg.m_pName = g_Config.m_ClDummyName;
 		Msg.m_pClan = g_Config.m_ClDummyClan;
 		Msg.m_Country = g_Config.m_ClDummyCountry;
 		CMsgPacker Packer(Msg.MsgID(), false);
 		Msg.Pack(&Packer);
 		Client()->SendMsgExY(&Packer, MSGFLAG_VITAL|MSGFLAG_FLUSH, 1);
+		*/
 	}
 	else
 		Client()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_FLUSH);
