@@ -29,6 +29,16 @@ public:
 		bool m_Player;
 
 		int m_FriendState;
+		// TODO: cracknet - 0.7 vars START
+		int m_PlayerType;
+
+		enum
+		{
+			PLAYERFLAG_SPEC=1,
+			PLAYERFLAG_BOT=2,
+			PLAYERFLAG_MASK=3,
+		};
+		// TODO: cracknet - 0.7 vars END
 	};
 
 	int m_SortedIndex;
@@ -61,6 +71,22 @@ public:
 	char m_aAddress[NETADDR_MAXSTRSIZE];
 	CClient m_aClients[MAX_CLIENTS];
 	mutable int m_NumFilteredPlayers;
+
+	// TODO: cracknet
+	// above are ddnet vars and below are 0.7 vars
+	// TODO: remove all ddnet vars and stick to 0.7 format
+	enum
+	{
+		LEVEL_CASUAL = 0,
+		LEVEL_NORMAL = 1,
+		LEVEL_COMPETITIVE = 2,
+		NUM_SERVER_LEVELS = 3
+	};
+
+	int m_NumBotPlayers;
+	int m_NumBotSpectators;
+	int m_ServerLevel;
+	char m_aHostname[128];
 };
 
 bool IsVanilla(const CServerInfo *pInfo);
@@ -98,6 +124,7 @@ public:
 		QUICK_SERVERNAME=1,
 		QUICK_PLAYER=2,
 		QUICK_MAPNAME=4,
+		QUICK_GAMETYPE=8,
 
 		TYPE_NONE = 0,
 		TYPE_INTERNET = 1,
@@ -115,6 +142,26 @@ public:
 		NETWORK_DDNET=0,
 		NETWORK_KOG=1,
 		NUM_NETWORKS,
+
+		REFRESHFLAG_INTERNET=1,
+		REFRESHFLAG_LAN=2,
+
+		FLAG_PASSWORD=1,
+		FLAG_PURE=2,
+		FLAG_PUREMAP=4,
+		FLAG_TIMESCORE=8,
+
+		FILTER_BOTS=16,
+		FILTER_EMPTY=32,
+		FILTER_FULL=64,
+		FILTER_SPECTATORS=128,
+		FILTER_FRIENDS=256,
+		FILTER_PW=512,
+		FILTER_FAVORITE=1024,
+		FILTER_COMPAT_VERSION=2048,
+		FILTER_PURE=4096,
+		FILTER_PURE_MAP=8192,
+		FILTER_COUNTRY= 16384,
 	};
 
 	virtual void Refresh(int Type) = 0;

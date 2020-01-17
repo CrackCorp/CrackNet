@@ -324,8 +324,9 @@ public:
 
 	static int PlayerScoreNameComp(const void *a, const void *b);
 
+	int UnpackServerInfo(CUnpacker *pUnpacker, CServerInfo *pInfo, int *pToken); // TODO: cracknet use this 0.7 func instead of ProcessServerInfo
 	void ProcessConnlessPacket(CNetChunk *pPacket);
-	void ProcessServerInfo(int Type, NETADDR *pFrom, const void *pData, int DataSize);
+	void ProcessServerInfo(int Type, NETADDR *pFrom, const void *pData, int DataSize); // TODO: cracknet remove this
 	void ProcessServerPacket(CNetChunk *pPacket);
 	void ProcessServerPacketDummy(CNetChunk *pPacket);
 

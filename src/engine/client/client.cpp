@@ -53,6 +53,7 @@
 #include <game/version.h>
 
 #include <mastersrv/mastersrv.h>
+#include <versionsrv/versionsrv.h>
 
 #include <engine/client/serverbrowser.h>
 #include <engine/client/demoedit.h>
@@ -1200,33 +1201,161 @@ int CClient::PlayerScoreNameComp(const void *a, const void *b)
 	return str_comp_nocase(p0->m_aName, p1->m_aName);
 }
 
+int CClient::UnpackServerInfo(CUnpacker *pUnpacker, CServerInfo *pInfo, int *pToken)
+{
+	if(pToken)
+		*pToken = pUnpacker->GetInt();
+	str_copy(pInfo->m_aVersion, pUnpacker->GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(pInfo->m_aVersion));
+	str_copy(pInfo->m_aName, pUnpacker->GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(pInfo->m_aName));
+	str_clean_whitespaces(pInfo->m_aName);
+	str_copy(pInfo->m_aHostname, pUnpacker->GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(pInfo->m_aHostname));
+	if(pInfo->m_aHostname[0] == 0)
+		str_copy(pInfo->m_aHostname, pInfo->m_aAddress, sizeof(pInfo->m_aHostname));
+	str_copy(pInfo->m_aMap, pUnpacker->GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(pInfo->m_aMap));
+	str_copy(pInfo->m_aGameType, pUnpacker->GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(pInfo->m_aGameType));
+	int Flags = pUnpacker->GetInt();
+	pInfo->m_Flags = 0;
+	if(Flags&SERVERINFO_FLAG_PASSWORD)
+		pInfo->m_Flags |= IServerBrowser::FLAG_PASSWORD;
+	if(Flags&SERVERINFO_FLAG_TIMESCORE)
+		pInfo->m_Flags |= IServerBrowser::FLAG_TIMESCORE;
+	pInfo->m_ServerLevel = clamp<int>(pUnpacker->GetInt(), SERVERINFO_LEVEL_MIN, SERVERINFO_LEVEL_MAX);
+	pInfo->m_NumPlayers = pUnpacker->GetInt();
+	pInfo->m_MaxPlayers = pUnpacker->GetInt();
+	pInfo->m_NumClients = pUnpacker->GetInt();
+	pInfo->m_MaxClients = pUnpacker->GetInt();
+	pInfo->m_NumBotPlayers = 0;
+	pInfo->m_NumBotSpectators = 0;
+
+	// don't add invalid info to the server browser list
+	if(pInfo->m_NumClients < 0 || pInfo->m_NumClients > pInfo->m_MaxClients || pInfo->m_MaxClients < 0 || pInfo->m_MaxClients > MAX_CLIENTS ||
+		pInfo->m_NumPlayers < 0 || pInfo->m_NumPlayers > pInfo->m_NumClients || pInfo->m_MaxPlayers < 0 || pInfo->m_MaxPlayers > pInfo->m_MaxClients)
+		return -1;
+	// drop standard gametype with more than MAX_PLAYERS
+	if(pInfo->m_MaxPlayers > MAX_PLAYERS && (str_comp(pInfo->m_aGameType, "DM") == 0 || str_comp(pInfo->m_aGameType, "TDM") == 0 || str_comp(pInfo->m_aGameType, "CTF") == 0 ||
+		str_comp(pInfo->m_aGameType, "LTS") == 0 || str_comp(pInfo->m_aGameType, "LMS") == 0))
+		return -1;
+
+	// use short version
+	if(!pToken)
+		return 0;
+
+	int NumPlayers = 0;
+	int NumClients = 0;
+	for(int i = 0; i < pInfo->m_NumClients; i++)
+	{
+		str_copy(pInfo->m_aClients[i].m_aName, pUnpacker->GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(pInfo->m_aClients[i].m_aName));
+		str_copy(pInfo->m_aClients[i].m_aClan, pUnpacker->GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES), sizeof(pInfo->m_aClients[i].m_aClan));
+		pInfo->m_aClients[i].m_Country = pUnpacker->GetInt();
+		pInfo->m_aClients[i].m_Score = pUnpacker->GetInt();
+		pInfo->m_aClients[i].m_PlayerType = pUnpacker->GetInt()&CServerInfo::CClient::PLAYERFLAG_MASK;
+
+		if(pInfo->m_aClients[i].m_PlayerType&CServerInfo::CClient::PLAYERFLAG_BOT)
+		{
+			if(pInfo->m_aClients[i].m_PlayerType&CServerInfo::CClient::PLAYERFLAG_SPEC)
+				pInfo->m_NumBotSpectators++;
+			else
+				pInfo->m_NumBotPlayers++;
+		}
+
+		NumClients++;
+		if(!(pInfo->m_aClients[i].m_PlayerType&CServerInfo::CClient::PLAYERFLAG_SPEC))
+			NumPlayers++;
+	}
+	pInfo->m_NumPlayers = NumPlayers;
+	pInfo->m_NumClients = NumClients;
+
+	return 0;
+}
+
+bool CompareScore(const CServerInfo::CClient &C1, const CServerInfo::CClient &C2)
+{
+	// TODO: cracknet
+	/*
+	if(C1.m_PlayerType&CServerInfo::CClient::PLAYERFLAG_SPEC)
+		return false;
+	if(C2.m_PlayerType&CServerInfo::CClient::PLAYERFLAG_SPEC)
+		return true;
+	*/
+	return C1.m_Score > C2.m_Score;
+}
+
+bool CompareTime(const CServerInfo::CClient &C1, const CServerInfo::CClient &C2)
+{
+	// TODO: cracknet
+	/*
+	if(C1.m_PlayerType&CServerInfo::CClient::PLAYERFLAG_SPEC)
+		return false;
+	if(C2.m_PlayerType&CServerInfo::CClient::PLAYERFLAG_SPEC)
+		return true;
+	*/
+	if(C1.m_Score < 0)
+		return false;
+	if(C2.m_Score < 0)
+		return true;
+	return C1.m_Score < C2.m_Score;
+}
+
+inline void SortClients(CServerInfo *pInfo)
+{
+	std::stable_sort(pInfo->m_aClients, pInfo->m_aClients + pInfo->m_NumClients,
+		(pInfo->m_Flags&IServerBrowser::FLAG_TIMESCORE) ? CompareTime : CompareScore);
+}
+
 void CClient::ProcessConnlessPacket(CNetChunk *pPacket)
 {
-	//server count from master server
-	if(pPacket->m_DataSize == (int)sizeof(SERVERBROWSE_COUNT) + 2 && mem_comp(pPacket->m_pData, SERVERBROWSE_COUNT, sizeof(SERVERBROWSE_COUNT)) == 0)
+	// version server
+	if(m_VersionInfo.m_State == CVersionInfo::STATE_READY && net_addr_comp(&pPacket->m_Address, &m_VersionInfo.m_VersionServeraddr.m_Addr) == 0)
 	{
-		unsigned char *pP = (unsigned char*) pPacket->m_pData;
-		pP += sizeof(SERVERBROWSE_COUNT);
-		int ServerCount = ((*pP)<<8) | *(pP+1);
-		int ServerID = -1;
-		for(int i = 0; i < IMasterServer::MAX_MASTERSERVERS; i++)
+		// version info
+		if(pPacket->m_DataSize == (int)(sizeof(VERSIONSRV_VERSION) + sizeof(GAME_RELEASE_VERSION)) &&
+			mem_comp(pPacket->m_pData, VERSIONSRV_VERSION, sizeof(VERSIONSRV_VERSION)) == 0)
+
 		{
-			if(!m_pMasterServer->IsValid(i))
-				continue;
-			NETADDR tmp = m_pMasterServer->GetAddr(i);
-			if(net_addr_comp(&pPacket->m_Address, &tmp) == 0)
+			char *pVersionData = (char*)pPacket->m_pData + sizeof(VERSIONSRV_VERSION);
+			int VersionMatch = !mem_comp(pVersionData, GAME_RELEASE_VERSION, sizeof(GAME_RELEASE_VERSION));
+
+			char aVersion[sizeof(GAME_RELEASE_VERSION)];
+			str_copy(aVersion, pVersionData, sizeof(aVersion));
+
+			char aBuf[256];
+			str_format(aBuf, sizeof(aBuf), "version does %s (%s)",
+				VersionMatch ? "match" : "NOT match",
+				aVersion);
+			m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/version", aBuf);
+
+			// assume version is out of date when version-data doesn't match
+			if(!VersionMatch)
 			{
-				ServerID = i;
-				break;
+				str_copy(m_aVersionStr, aVersion, sizeof(m_aVersionStr));
 			}
+
+			// request the map version list now
+			CNetChunk Packet;
+			mem_zero(&Packet, sizeof(Packet));
+			Packet.m_ClientID = -1;
+			Packet.m_Address = m_VersionInfo.m_VersionServeraddr.m_Addr;
+			Packet.m_pData = VERSIONSRV_GETMAPLIST;
+			Packet.m_DataSize = sizeof(VERSIONSRV_GETMAPLIST);
+			Packet.m_Flags = NETSENDFLAG_CONNLESS;
+			m_NetClient[CLIENT_CONTACT].Send(&Packet);
 		}
-		if(ServerCount > -1 && ServerID != -1)
+
+		// COULDDO: cracknet
+		// tested in ZillyWoods the mapchecker is not a crucial function
+		// and not needed to join servers
+		/*
+		// map version list
+		if(pPacket->m_DataSize >= (int)sizeof(VERSIONSRV_MAPLIST) &&
+			mem_comp(pPacket->m_pData, VERSIONSRV_MAPLIST, sizeof(VERSIONSRV_MAPLIST)) == 0)
 		{
-			m_pMasterServer->SetCount(ServerID, ServerCount);
-			if(g_Config.m_Debug)
-				dbg_msg("mastercount", "server %d got %d servers", ServerID, ServerCount);
+			int Size = pPacket->m_DataSize-sizeof(VERSIONSRV_MAPLIST);
+			int Num = Size/sizeof(CMapVersion);
+			m_MapChecker.AddMaplist((CMapVersion *)((char*)pPacket->m_pData+sizeof(VERSIONSRV_MAPLIST)), Num);
 		}
+		*/
 	}
+
 	// server list from master server
 	if(pPacket->m_DataSize >= (int)sizeof(SERVERBROWSE_LIST) &&
 		mem_comp(pPacket->m_pData, SERVERBROWSE_LIST, sizeof(SERVERBROWSE_LIST)) == 0)
@@ -1255,10 +1384,10 @@ void CClient::ProcessConnlessPacket(CNetChunk *pPacket)
 		{
 			NETADDR Addr;
 
-			static unsigned char s_IPV4Mapping[] = { 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF };
+			static unsigned char s_aIPV4Mapping[] = {0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0xFF, 0xFF};
 
 			// copy address
-			if(!mem_comp(s_IPV4Mapping, pAddrs[i].m_aIp, sizeof(s_IPV4Mapping)))
+			if(!mem_comp(s_aIPV4Mapping, pAddrs[i].m_aIp, sizeof(s_aIPV4Mapping)))
 			{
 				mem_zero(&Addr, sizeof(Addr));
 				Addr.type = NETTYPE_IPV4;
@@ -1274,28 +1403,22 @@ void CClient::ProcessConnlessPacket(CNetChunk *pPacket)
 			}
 			Addr.port = (pAddrs[i].m_aPort[0]<<8) | pAddrs[i].m_aPort[1];
 
-			m_ServerBrowser.Set(Addr, IServerBrowser::SET_MASTER_ADD, -1, 0x0);
+			m_ServerBrowser.Set(Addr, CServerBrowser::SET_MASTER_ADD, -1, 0x0);
 		}
 	}
 
 	// server info
-	if(pPacket->m_DataSize >= (int)sizeof(SERVERBROWSE_INFO))
+	if(pPacket->m_DataSize >= (int)sizeof(SERVERBROWSE_INFO) && mem_comp(pPacket->m_pData, SERVERBROWSE_INFO, sizeof(SERVERBROWSE_INFO)) == 0)
 	{
-		int Type = -1;
-		if(mem_comp(pPacket->m_pData, SERVERBROWSE_INFO, sizeof(SERVERBROWSE_INFO)) == 0)
-			Type = SERVERINFO_VANILLA;
-		else if(mem_comp(pPacket->m_pData, SERVERBROWSE_INFO_64_LEGACY, sizeof(SERVERBROWSE_INFO_64_LEGACY)) == 0)
-			Type = SERVERINFO_64_LEGACY;
-		else if(mem_comp(pPacket->m_pData, SERVERBROWSE_INFO_EXTENDED, sizeof(SERVERBROWSE_INFO_EXTENDED)) == 0)
-			Type = SERVERINFO_EXTENDED;
-		else if(mem_comp(pPacket->m_pData, SERVERBROWSE_INFO_EXTENDED_MORE, sizeof(SERVERBROWSE_INFO_EXTENDED_MORE)) == 0)
-			Type = SERVERINFO_EXTENDED_MORE;
-
-		if(Type != -1)
+		CUnpacker Up;
+		CServerInfo Info = {0};
+		Up.Reset((unsigned char*)pPacket->m_pData+sizeof(SERVERBROWSE_INFO), pPacket->m_DataSize-sizeof(SERVERBROWSE_INFO));
+		net_addr_str(&pPacket->m_Address, Info.m_aAddress, sizeof(Info.m_aAddress), true);
+		int Token;
+		if(!UnpackServerInfo(&Up, &Info, &Token) && !Up.Error())
 		{
-			void *pData = (unsigned char *)pPacket->m_pData + sizeof(SERVERBROWSE_INFO);
-			int DataSize = pPacket->m_DataSize - sizeof(SERVERBROWSE_INFO);
-			ProcessServerInfo(Type, &pPacket->m_Address, pData, DataSize);
+			SortClients(&Info);
+			m_ServerBrowser.Set(pPacket->m_Address, CServerBrowser::SET_TOKEN, Token, &Info);
 		}
 	}
 }

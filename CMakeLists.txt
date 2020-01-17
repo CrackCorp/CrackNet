@@ -1121,19 +1121,23 @@ endif()
 ########################################################################
 
 set_glob(MASTERSRV_SRC GLOB src/mastersrv mastersrv.cpp mastersrv.h)
+set_glob(VERSIONSRV_SRC GLOB src/versionsrv mapversions.h versionsrv.cpp versionsrv.h)
 set_glob(TWPING_SRC GLOB src/twping twping.cpp)
 
 set(TARGET_MASTERSRV mastersrv)
+set(TARGET_VERSIONSRV versionsrv)
 set(TARGET_TWPING twping)
 
 add_executable(${TARGET_MASTERSRV} EXCLUDE_FROM_ALL ${MASTERSRV_SRC} $<TARGET_OBJECTS:engine-shared> ${DEPS})
+add_executable(${TARGET_VERSIONSRV} EXCLUDE_FROM_ALL ${VERSIONSRV_SRC} $<TARGET_OBJECTS:engine-shared> ${DEPS})
 add_executable(${TARGET_TWPING} EXCLUDE_FROM_ALL ${TWPING_SRC} $<TARGET_OBJECTS:engine-shared> ${DEPS})
 
 target_link_libraries(${TARGET_MASTERSRV} ${LIBS})
+target_link_libraries(${TARGET_VERSIONSRV} ${LIBS})
 target_link_libraries(${TARGET_TWPING} ${LIBS})
 
-list(APPEND TARGETS_OWN ${TARGET_MASTERSRV} ${TARGET_TWPING})
-list(APPEND TARGETS_LINK ${TARGET_MASTERSRV} ${TARGET_TWPING})
+list(APPEND TARGETS_OWN ${TARGET_MASTERSRV} ${TARGET_VERSIONSRV} ${TARGET_TWPING})
+list(APPEND TARGETS_LINK ${TARGET_MASTERSRV} ${TARGET_VERSIONSRV} ${TARGET_TWPING})
 
 set(TARGETS_TOOLS)
 set_glob(TOOLS GLOB src/tools
