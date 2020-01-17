@@ -1863,15 +1863,12 @@ void CGameClient::SendInfo(bool IsDummy)
 	}
 	if(IsDummy)
 	{
-		// TODO: cracknet
-		/*
 		Msg.m_pName = g_Config.m_ClDummyName;
 		Msg.m_pClan = g_Config.m_ClDummyClan;
 		Msg.m_Country = g_Config.m_ClDummyCountry;
 		CMsgPacker Packer(Msg.MsgID(), false);
 		Msg.Pack(&Packer);
 		Client()->SendMsgExY(&Packer, MSGFLAG_VITAL|MSGFLAG_FLUSH, 1);
-		*/
 	}
 	else
 		Client()->SendPackMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_FLUSH);
