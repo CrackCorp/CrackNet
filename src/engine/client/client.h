@@ -154,11 +154,13 @@ class CClient : public IClient, public CDemoPlayer::IListener
 	char m_aMapdownloadName[256];
 	IOHANDLE m_MapdownloadFile;
 	int m_MapdownloadChunk;
+	int m_MapdownloadChunkNum;
+	int m_MapDownloadChunkSize;
+	SHA256_DIGEST m_MapdownloadSha256;
+	bool m_MapdownloadSha256Present;
 	int m_MapdownloadCrc;
 	int m_MapdownloadAmount;
 	int m_MapdownloadTotalsize;
-	bool m_MapdownloadSha256Present;
-	SHA256_DIGEST m_MapdownloadSha256;
 
 	bool m_MapDetailsPresent;
 	char m_aMapDetailsName[256];
@@ -319,8 +321,8 @@ public:
 
 	virtual const char *ErrorString();
 
-	const char *LoadMap(const char *pName, const char *pFilename, SHA256_DIGEST *pWantedSha256, unsigned WantedCrc);
-	const char *LoadMapSearch(const char *pMapName, SHA256_DIGEST *pWantedSha256, int WantedCrc);
+	const char *LoadMap(const char *pName, const char *pFilename, const SHA256_DIGEST *pWantedSha256, unsigned WantedCrc);
+	const char *LoadMapSearch(const char *pMapName, const SHA256_DIGEST *pWantedSha256, int WantedCrc);
 
 	static int PlayerScoreNameComp(const void *a, const void *b);
 

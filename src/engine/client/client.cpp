@@ -1081,7 +1081,7 @@ void CClient::Render()
 	}
 }
 
-const char *CClient::LoadMap(const char *pName, const char *pFilename, SHA256_DIGEST *pWantedSha256, unsigned WantedCrc)
+const char *CClient::LoadMap(const char *pName, const char *pFilename, const SHA256_DIGEST *pWantedSha256, unsigned WantedCrc)
 {
 	static char s_aErrorMsg[128];
 
@@ -1129,7 +1129,7 @@ const char *CClient::LoadMap(const char *pName, const char *pFilename, SHA256_DI
 	return 0;
 }
 
-const char *CClient::LoadMapSearch(const char *pMapName, SHA256_DIGEST *pWantedSha256, int WantedCrc)
+const char *CClient::LoadMapSearch(const char *pMapName, const SHA256_DIGEST *pWantedSha256, int WantedCrc)
 {
 	const char *pError = 0;
 	char aBuf[512];
@@ -1626,7 +1626,7 @@ bool CClient::ShouldSendChatTimeoutCodeHeuristic()
 	return IsDDNet(&m_CurrentServerInfo);
 }
 
-static void FormatMapDownloadFilename(const char *pName, SHA256_DIGEST *pSha256, int Crc, bool Temp, char *pBuffer, int BufferSize)
+static void FormatMapDownloadFilename(const char *pName, const SHA256_DIGEST *pSha256, int Crc, bool Temp, char *pBuffer, int BufferSize)
 {
 	char aSha256[SHA256_MAXSTRSIZE + 1];
 	aSha256[0] = 0;
@@ -1663,97 +1663,55 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 {
 	CUnpacker Unpacker;
 	Unpacker.Reset(pPacket->m_pData, pPacket->m_DataSize);
-	CMsgPacker Packer(NETMSG_EX);
 
 	// unpack msgid and system flag
-	int Msg;
-	bool Sys;
-	CUuid Uuid;
+	int Msg = Unpacker.GetInt();
+	int Sys = Msg&1;
+	Msg >>= 1;
 
-	int Result = UnpackMessageID(&Msg, &Sys, &Uuid, &Unpacker, &Packer);
-	if(Result == UNPACKMESSAGE_ERROR)
-	{
+	if(Unpacker.Error())
 		return;
-	}
-	else if(Result == UNPACKMESSAGE_ANSWER)
-	{
-		SendMsgEx(&Packer, MSGFLAG_VITAL, true);
-	}
 
 	if(Sys)
 	{
 		// system message
-		if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_MAP_DETAILS)
+		if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_MAP_CHANGE)
 		{
-			const char *pMap = Unpacker.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
-			SHA256_DIGEST *pMapSha256 = (SHA256_DIGEST *)Unpacker.GetRaw(sizeof(*pMapSha256));
-			int MapCrc = Unpacker.GetInt();
-
-			if(Unpacker.Error())
-			{
-				return;
-			}
-
-			m_MapDetailsPresent = true;
-			str_copy(m_aMapDetailsName, pMap, sizeof(m_aMapDetailsName));
-			m_MapDetailsSha256 = *pMapSha256;
-			m_MapDetailsCrc = MapCrc;
-		}
-		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_CAPABILITIES)
-		{
-			if(!m_CanReceiveServerCapabilities)
-			{
-				return;
-			}
-			int Version = Unpacker.GetInt();
-			int Flags = Unpacker.GetInt();
-			if(Version <= 0)
-			{
-				return;
-			}
-			m_ServerCapabilities = GetServerCapabilities(Version, Flags);
-			m_CanReceiveServerCapabilities = false;
-			m_ServerSentCapabilities = true;
-		}
-		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_MAP_CHANGE)
-		{
-			if(m_CanReceiveServerCapabilities)
-			{
-				m_ServerCapabilities = GetServerCapabilities(0, 0);
-				m_CanReceiveServerCapabilities = false;
-			}
-			bool MapDetailsWerePresent = m_MapDetailsPresent;
-			m_MapDetailsPresent = false;
-
 			const char *pMap = Unpacker.GetString(CUnpacker::SANITIZE_CC|CUnpacker::SKIP_START_WHITESPACES);
 			int MapCrc = Unpacker.GetInt();
 			int MapSize = Unpacker.GetInt();
-			const char *pError = 0;
-
+			int MapChunkNum = Unpacker.GetInt();
+			int MapChunkSize = Unpacker.GetInt();
 			if(Unpacker.Error())
 				return;
+			const SHA256_DIGEST *pMapSha256 = (const SHA256_DIGEST *)Unpacker.GetRaw(sizeof(*pMapSha256));
+			const char *pError = 0;
 
 			if(m_DummyConnected)
 				DummyDisconnect(0);
 
-			for(int i = 0; pMap[i]; i++) // protect the player from nasty map names
+			// COULDDO: cracknet
+			// mapchecker is not needed to connect to servers tho
+			/*
+			// check for valid standard map
+			if(!m_MapChecker.IsMapValid(pMap, pMapSha256, MapCrc, MapSize))
+				pError = "invalid standard map";
+			*/
+
+			// protect the player from nasty map names
+			for(int i = 0; pMap[i]; i++)
 			{
 				if(pMap[i] == '/' || pMap[i] == '\\')
 					pError = "strange character in map name";
 			}
 
-			if(MapSize < 0)
+			if(MapSize <= 0)
 				pError = "invalid map size";
 
 			if(pError)
 				DisconnectWithReason(pError);
 			else
 			{
-				SHA256_DIGEST *pMapSha256 = 0;
-				if(MapDetailsWerePresent && str_comp(m_aMapDetailsName, pMap) == 0 && m_MapDetailsCrc == MapCrc)
-				{
-					pMapSha256 = &m_MapDetailsSha256;
-				}
 				pError = LoadMapSearch(pMap, pMapSha256, MapCrc);
 
 				if(!pError)
@@ -1763,84 +1721,89 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 				}
 				else
 				{
-					char aFilename[256];
-					FormatMapDownloadFilename(pMap, pMapSha256, MapCrc, false, aFilename, sizeof(aFilename));
-
-					char aTempFilename[256];
-					FormatMapDownloadFilename(pMap, pMapSha256, MapCrc, true, aTempFilename, sizeof(aTempFilename));
-
-					str_format(m_aMapdownloadFilename, sizeof(m_aMapdownloadFilename), "downloadedmaps/%s", aTempFilename);
+					// start map download
+					FormatMapDownloadFilename(pMap, pMapSha256, MapCrc, false, m_aMapdownloadFilename, sizeof(m_aMapdownloadFilename));
 
 					char aBuf[256];
 					str_format(aBuf, sizeof(aBuf), "starting to download map to '%s'", m_aMapdownloadFilename);
 					m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/network", aBuf);
 
-					m_MapdownloadChunk = 0;
 					str_copy(m_aMapdownloadName, pMap, sizeof(m_aMapdownloadName));
-
-					m_MapdownloadSha256Present = (bool)pMapSha256;
+					if(m_MapdownloadFile)
+						io_close(m_MapdownloadFile);
+					m_MapdownloadFile = Storage()->OpenFile(m_aMapdownloadFilename, IOFLAG_WRITE, IStorage::TYPE_SAVE);
+					m_MapdownloadChunk = 0;
+					m_MapdownloadChunkNum = MapChunkNum;
+					m_MapDownloadChunkSize = MapChunkSize;
 					m_MapdownloadSha256 = pMapSha256 ? *pMapSha256 : SHA256_ZEROED;
+					m_MapdownloadSha256Present = pMapSha256;
 					m_MapdownloadCrc = MapCrc;
 					m_MapdownloadTotalsize = MapSize;
 					m_MapdownloadAmount = 0;
 
-					ResetMapDownload();
+					// request first chunk package of map data
+					CMsgPacker Msg(NETMSG_REQUEST_MAP_DATA, true);
+					SendMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_FLUSH);
 
-					if(pMapSha256 && g_Config.m_ClHttpMapDownload)
-					{
-						char aUrl[256];
-						char aEscaped[256];
-						EscapeUrl(aEscaped, sizeof(aEscaped), aFilename);
-						str_format(aUrl, sizeof(aUrl), "%s/%s", g_Config.m_ClDDNetMapDownloadUrl, aEscaped);
-
-						m_pMapdownloadTask = std::make_shared<CGetFile>(Storage(), aUrl, m_aMapdownloadFilename, IStorage::TYPE_SAVE, true);
-						Engine()->AddJob(m_pMapdownloadTask);
-					}
-					else
-						SendMapRequest();
+					if(g_Config.m_Debug)
+						m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client/network", "requested first chunk package");
 				}
 			}
 		}
-		else if(Msg == NETMSG_MAP_DATA)
+		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_MAP_DATA)
 		{
-			int Last = Unpacker.GetInt();
-			int MapCRC = Unpacker.GetInt();
-			int Chunk = Unpacker.GetInt();
-			int Size = Unpacker.GetInt();
-			const unsigned char *pData = Unpacker.GetRaw(Size);
+			if(!m_MapdownloadFile)
+				return;
 
-			// check for errors
-			if(Unpacker.Error() || Size <= 0 || MapCRC != m_MapdownloadCrc || Chunk != m_MapdownloadChunk || !m_MapdownloadFile)
+			int Size = minimum(m_MapDownloadChunkSize, m_MapdownloadTotalsize-m_MapdownloadAmount);
+			const unsigned char *pData = Unpacker.GetRaw(Size);
+			if(Unpacker.Error())
 				return;
 
 			io_write(m_MapdownloadFile, pData, Size);
-
+			++m_MapdownloadChunk;
 			m_MapdownloadAmount += Size;
 
-			if(Last)
+			if(m_MapdownloadAmount == m_MapdownloadTotalsize)
 			{
-				if(m_MapdownloadFile)
-				{
-					io_close(m_MapdownloadFile);
-					m_MapdownloadFile = 0;
-				}
-				FinishMapDownload();
-			}
-			else
-			{
-				// request new chunk
-				m_MapdownloadChunk++;
+				// map download complete
+				m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/network", "download complete, loading map");
 
-				CMsgPacker Msg(NETMSG_REQUEST_MAP_DATA);
-				Msg.AddInt(m_MapdownloadChunk);
-				SendMsgEx(&Msg, MSGFLAG_VITAL|MSGFLAG_FLUSH);
+				if(m_MapdownloadFile)
+					io_close(m_MapdownloadFile);
+				m_MapdownloadFile = 0;
+				m_MapdownloadAmount = 0;
+				m_MapdownloadTotalsize = -1;
+
+				// load map
+				const char *pError = LoadMap(m_aMapdownloadName, m_aMapdownloadFilename, m_MapdownloadSha256Present ? &m_MapdownloadSha256 : 0, m_MapdownloadCrc);
+				if(!pError)
+				{
+					m_pConsole->Print(IConsole::OUTPUT_LEVEL_ADDINFO, "client/network", "loading done");
+					SendReady();
+				}
+				else
+					DisconnectWithReason(pError);
+			}
+			else if(m_MapdownloadChunk%m_MapdownloadChunkNum == 0)
+			{
+				// request next chunk package of map data
+				CMsgPacker Msg(NETMSG_REQUEST_MAP_DATA, true);
+				SendMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_FLUSH);
 
 				if(g_Config.m_Debug)
-				{
-					char aBuf[256];
-					str_format(aBuf, sizeof(aBuf), "requested chunk %d", m_MapdownloadChunk);
-					m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client/network", aBuf);
-				}
+					m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client/network", "requested next chunk package");
+			}
+		}
+		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_SERVERINFO)
+		{
+			CServerInfo Info = {0};
+			net_addr_str(&pPacket->m_Address, Info.m_aAddress, sizeof(Info.m_aAddress), true);
+			if(!UnpackServerInfo(&Unpacker, &Info, 0) && !Unpacker.Error())
+			{
+				SortClients(&Info);
+				mem_copy(&m_CurrentServerInfo, &Info, sizeof(m_CurrentServerInfo));
+				m_CurrentServerInfo.m_NetAddr = m_ServerAddress;
 			}
 		}
 		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_CON_READY)
@@ -1849,8 +1812,8 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 		}
 		else if(Msg == NETMSG_PING)
 		{
-			CMsgPacker Msg(NETMSG_PING_REPLY);
-			SendMsgEx(&Msg, 0);
+			CMsgPacker Msg(NETMSG_PING_REPLY, true);
+			SendMsg(&Msg, 0);
 		}
 		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_RCON_CMD_ADD)
 		{
@@ -1866,17 +1829,38 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			if(Unpacker.Error() == 0)
 				m_pConsole->DeregisterTemp(pName);
 		}
-		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_RCON_AUTH_STATUS)
+		// TODO: cracknet
+		// support sv_map autocompletion
+		// https://github.com/teeworlds/teeworlds/commit/bc38f677506bb0244e4c3f986332f9bb72a8c4b9
+		/*
+		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_MAPLIST_ENTRY_ADD)
 		{
-			int Result = Unpacker.GetInt();
+			const char *pName = Unpacker.GetString(CUnpacker::SANITIZE_CC);
 			if(Unpacker.Error() == 0)
-				m_RconAuthed[g_Config.m_ClDummy] = Result;
-			int Old = m_UseTempRconCommands;
-			m_UseTempRconCommands = Unpacker.GetInt();
-			if(Unpacker.Error() != 0)
-				m_UseTempRconCommands = 0;
-			if(Old != 0 && m_UseTempRconCommands == 0)
+				m_pConsole->RegisterTempMap(pName);
+		}
+		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_MAPLIST_ENTRY_REM)
+		{
+			const char *pName = Unpacker.GetString(CUnpacker::SANITIZE_CC);
+			if(Unpacker.Error() == 0)
+				m_pConsole->DeregisterTempMap(pName);
+		}
+		*/
+		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_RCON_AUTH_ON)
+		{
+			m_RconAuthed[g_Config.m_ClDummy] = 1;
+			m_UseTempRconCommands = 1;
+		}
+		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_RCON_AUTH_OFF)
+		{
+			m_RconAuthed[g_Config.m_ClDummy] = 0;
+			if(m_UseTempRconCommands)
 				m_pConsole->DeregisterTempAll();
+			m_UseTempRconCommands = 0;
+			// TODO: cracknet
+			// support sv_map autocompletion
+			// https://github.com/teeworlds/teeworlds/commit/bc38f677506bb0244e4c3f986332f9bb72a8c4b9
+			// m_pConsole->DeregisterTempMapAll();
 		}
 		else if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 && Msg == NETMSG_RCON_LINE)
 		{
@@ -1894,7 +1878,6 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 		{
 			int InputPredTick = Unpacker.GetInt();
 			int TimeLeft = Unpacker.GetInt();
-			int64 Now = time_get();
 
 			// adjust our prediction time
 			int64 Target = 0;
@@ -1902,7 +1885,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			{
 				if(m_aInputs[g_Config.m_ClDummy][k].m_Tick == InputPredTick)
 				{
-					Target = m_aInputs[g_Config.m_ClDummy][k].m_PredictedTime + (Now - m_aInputs[g_Config.m_ClDummy][k].m_Time);
+					Target = m_aInputs[g_Config.m_ClDummy][k].m_PredictedTime + (time_get() - m_aInputs[g_Config.m_ClDummy][k].m_Time);
 					Target = Target - (int64)(((TimeLeft-PREDICTION_MARGIN)/1000.0f)*time_freq());
 					break;
 				}
@@ -1922,10 +1905,6 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 			int CompleteSize = 0;
 			const char *pData = 0;
 
-			// only allow packets from the server we actually want
-			if(net_addr_comp(&pPacket->m_Address, &m_ServerAddress))
-				return;
-
 			// we are not allowed to process snapshot yet
 			if(State() < IClient::STATE_LOADING)
 				return;
@@ -1944,7 +1923,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 
 			pData = (const char *)Unpacker.GetRaw(PartSize);
 
-			if(Unpacker.Error() || NumParts < 1 || Part < 0 || PartSize < 0)
+			if(Unpacker.Error() || NumParts < 1 || NumParts > CSnapshot::MAX_PARTS || Part < 0 || Part >= NumParts || PartSize < 0 || PartSize > MAX_SNAPSHOT_PACKSIZE)
 				return;
 
 			if(GameTick >= m_CurrentRecvTick[g_Config.m_ClDummy])
@@ -1955,7 +1934,8 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 					m_CurrentRecvTick[g_Config.m_ClDummy] = GameTick;
 				}
 
-				mem_copy((char*)m_aSnapshotIncomingData + Part*MAX_SNAPSHOT_PACKSIZE, pData, clamp(PartSize, 0, (int)sizeof(m_aSnapshotIncomingData) - Part*MAX_SNAPSHOT_PACKSIZE));
+				// TODO: clean this up abit
+				mem_copy((char*)m_aSnapshotIncomingData + Part*MAX_SNAPSHOT_PACKSIZE, pData, PartSize);
 				m_SnapshotParts[g_Config.m_ClDummy] |= 1<<Part;
 
 				if(m_SnapshotParts[g_Config.m_ClDummy] == (unsigned)((1<<NumParts)-1))
@@ -2020,7 +2000,7 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 					SnapSize = m_SnapshotDelta.UnpackDelta(pDeltaShot, pTmpBuffer3, pDeltaData, DeltaSize);
 					if(SnapSize < 0)
 					{
-						dbg_msg("client", "delta unpack failed!=%d", SnapSize);
+						m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client", "delta unpack failed!");
 						return;
 					}
 
@@ -2061,20 +2041,22 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 					// add new
 					m_SnapshotStorage[g_Config.m_ClDummy].Add(GameTick, time_get(), SnapSize, pTmpBuffer3, 1);
 
-					// for antiping: if the projectile netobjects from the server contains extra data, this is removed and the original content restored before recording demo
-					unsigned char aExtraInfoRemoved[CSnapshot::MAX_SIZE];
-					mem_copy(aExtraInfoRemoved, pTmpBuffer3, SnapSize);
-					SnapshotRemoveExtraInfo(aExtraInfoRemoved);
-
+					// TODO: cracknet
+					// iterate over all of ddnet demo recorders see:
+					// https://github.com/ddnet/ddnet/blob/77a4cd5b016d85e64514056bb4e75b108c6d929b/src/engine/client/client.cpp#L1947-L1955
+					/*
 					// add snapshot to demo
-					for(int i = 0; i < RECORDER_MAX; i++)
+					if(m_DemoRecorder.IsRecording())
 					{
-						if(m_DemoRecorder[i].IsRecording())
-						{
-							// write snapshot
-							m_DemoRecorder[i].RecordSnapshot(GameTick, aExtraInfoRemoved, SnapSize);
-						}
+						// build up snapshot and add local messages
+						m_DemoRecSnapshotBuilder.Init(pTmpBuffer3);
+						GameClient()->OnDemoRecSnap();
+						SnapSize = m_DemoRecSnapshotBuilder.Finish(pTmpBuffer3);
+
+						// write snapshot
+						m_DemoRecorder.RecordSnapshot(GameTick, pTmpBuffer3, SnapSize);
 					}
+					*/
 
 					// apply snapshot, cycle pointers
 					m_ReceivedSnapshots[g_Config.m_ClDummy]++;
@@ -2090,7 +2072,6 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 						m_GameTime[g_Config.m_ClDummy].Init((GameTick-1)*time_freq()/50);
 						m_aSnapshots[g_Config.m_ClDummy][SNAP_PREV] = m_SnapshotStorage[g_Config.m_ClDummy].m_pFirst;
 						m_aSnapshots[g_Config.m_ClDummy][SNAP_CURRENT] = m_SnapshotStorage[g_Config.m_ClDummy].m_pLast;
-						m_LocalStartTime = time_get();
 						SetState(IClient::STATE_ONLINE);
 						DemoRecorder_HandleAutoStart();
 					}
@@ -2104,45 +2085,25 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 						m_GameTime[g_Config.m_ClDummy].Update(&m_GametimeMarginGraph, (GameTick-1)*time_freq()/50, TimeLeft, 0);
 					}
 
-					/*
-					if(m_ReceivedSnapshots[g_Config.m_ClDummy] > 50 && !m_aTimeoutCodeSent[g_Config.m_ClDummy])
-					{
-						if(m_ServerCapabilities.m_ChatTimeoutCode || ShouldSendChatTimeoutCodeHeuristic())
-						{
-							m_aTimeoutCodeSent[g_Config.m_ClDummy] = true;
-							CNetMsg_Cl_Say Msg;
-							Msg.m_Team = 0;
-							char aBuf[256];
-							str_format(aBuf, sizeof(aBuf), "/timeout %s", m_aTimeoutCodes[g_Config.m_ClDummy]);
-							Msg.m_pMessage = aBuf;
-							CMsgPacker Packer(Msg.MsgID());
-							Msg.Pack(&Packer);
-							SendMsgExY(&Packer, MSGFLAG_VITAL, false, g_Config.m_ClDummy);
-						}
-					}
-					*/
-
 					// ack snapshot
 					m_AckGameTick[g_Config.m_ClDummy] = GameTick;
 				}
 			}
 		}
-		else if(Msg == NETMSG_RCONTYPE)
-		{
-			bool UsernameReq = Unpacker.GetInt() & 1;
-			GameClient()->OnRconType(UsernameReq);
-		}
 	}
 	else
 	{
-		if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0 || Msg == NETMSGTYPE_SV_EXTRAPROJECTILE)
+		if((pPacket->m_Flags&NET_CHUNKFLAG_VITAL) != 0)
 		{
 			// game message
-			for(int i = 0; i < RECORDER_MAX; i++)
-				if(m_DemoRecorder[i].IsRecording())
-					m_DemoRecorder[i].RecordMessage(pPacket->m_pData, pPacket->m_DataSize);
-
 			GameClient()->OnMessage(Msg, &Unpacker);
+
+			// TODO: cracknet
+			// support demos
+			/*
+			if(m_RecordGameMessage && m_DemoRecorder.IsRecording())
+				m_DemoRecorder.RecordMessage(pPacket->m_pData, pPacket->m_DataSize);
+			*/
 		}
 	}
 }

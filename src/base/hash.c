@@ -35,7 +35,7 @@ SHA256_DIGEST sha256(const void *message, size_t message_len)
 	return sha256_finish(&ctxt);
 }
 
-void sha256_str(SHA256_DIGEST digest, char *str, size_t max_len)
+void sha256_str(const SHA256_DIGEST digest, char *str, size_t max_len)
 {
 	digest_str(digest.data, sizeof(digest.data), str, max_len);
 }

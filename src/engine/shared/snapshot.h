@@ -31,9 +31,10 @@ class CSnapshot
 public:
 	enum
 	{
-		OFFSET_UUID_TYPE=0x4000,
-		MAX_TYPE=0x7fff,
-		MAX_SIZE=64*1024
+		OFFSET_UUID_TYPE	= 0x4000,
+		MAX_TYPE			= 0x7fff,
+		MAX_PARTS			= 64,
+		MAX_SIZE			= MAX_PARTS*1024
 	};
 
 	void Clear() { m_DataSize = 0; m_NumItems = 0; }

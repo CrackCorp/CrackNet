@@ -39,14 +39,18 @@ enum
 	// sent by server
 	NETMSG_MAP_CHANGE,		// sent when client should switch map
 	NETMSG_MAP_DATA,		// map transfer, contains a chunk of the map file
+	NETMSG_SERVERINFO,
 	NETMSG_CON_READY,		// connection is ready, client should send start info
 	NETMSG_SNAP,			// normal snapshot, multiple parts
 	NETMSG_SNAPEMPTY,		// empty snapshot
 	NETMSG_SNAPSINGLE,		// ?
 	NETMSG_SNAPSMALL,		//
 	NETMSG_INPUTTIMING,		// reports how off the input was
-	NETMSG_RCON_AUTH_STATUS,// result of the authentication
+	NETMSG_RCON_AUTH_ON,	// rcon authentication enabled
+	NETMSG_RCON_AUTH_OFF,	// rcon authentication disabled
 	NETMSG_RCON_LINE,		// line that should be printed to the remote console
+	NETMSG_RCON_CMD_ADD,
+	NETMSG_RCON_CMD_REM,
 
 	NETMSG_AUTH_CHALLANGE,	//
 	NETMSG_AUTH_RESULT,		//
@@ -67,9 +71,8 @@ enum
 	NETMSG_PING_REPLY,
 	NETMSG_ERROR,
 
-	// sent by server (todo: move it up)
-	NETMSG_RCON_CMD_ADD,
-	NETMSG_RCON_CMD_REM,
+	NETMSG_MAPLIST_ENTRY_ADD,// todo 0.8: move up
+	NETMSG_MAPLIST_ENTRY_REM,
 
 	NUM_NETMSGS,
 };
