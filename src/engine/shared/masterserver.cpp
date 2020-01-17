@@ -8,6 +8,8 @@
 #include <engine/masterserver.h>
 #include <engine/storage.h>
 
+#include <mastersrv/mastersrv.h>
+
 #include "linereader.h"
 
 class CMasterServer : public IEngineMasterServer
@@ -80,7 +82,7 @@ public:
 				if(m_apLookup[i]->m_Result == 0)
 				{
 					m_aMasterServers[i].m_Addr = m_apLookup[i]->m_Addr;
-					m_aMasterServers[i].m_Addr.port = 8300;
+					m_aMasterServers[i].m_Addr.port = MASTERSERVER_PORT;
 					m_aMasterServers[i].m_Valid = true;
 				}
 				else
@@ -166,7 +168,7 @@ public:
 			char aAddrStr[NETADDR_MAXSTRSIZE];
 			if(sscanf(pLine, "%127s %47s", Info.m_aHostname, aAddrStr) == 2 && net_addr_from_str(&Info.m_Addr, aAddrStr) == 0)
 			{
-				Info.m_Addr.port = 8300;
+				Info.m_Addr.port = MASTERSERVER_PORT;
 				bool Added = false;
 				for(int i = 0; i < MAX_MASTERSERVERS; ++i)
 				{
