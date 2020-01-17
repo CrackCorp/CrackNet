@@ -2378,7 +2378,7 @@ void CClient::LoadDDNetInfo()
 
 void CClient::PumpNetwork()
 {
-	for(int i=0; i<NUM_CLIENTS; i++)
+	for(int i = 0; i < 2; i++)
 	{
 		m_NetClient[i].Update();
 	}
@@ -2386,17 +2386,17 @@ void CClient::PumpNetwork()
 	if(State() != IClient::STATE_DEMOPLAYBACK)
 	{
 		// check for errors
-		if(State() != IClient::STATE_OFFLINE && State() != IClient::STATE_QUITING && m_NetClient[CLIENT_MAIN].State() == NETSTATE_OFFLINE)
+		if(State() != IClient::STATE_OFFLINE && State() != IClient::STATE_QUITING && m_NetClient[0].State() == NETSTATE_OFFLINE)
 		{
 			SetState(IClient::STATE_OFFLINE);
 			Disconnect();
 			char aBuf[256];
-			str_format(aBuf, sizeof(aBuf), "offline error='%s'", m_NetClient[CLIENT_MAIN].ErrorString());
+			str_format(aBuf, sizeof(aBuf), "offline error='%s'", m_NetClient[0].ErrorString());
 			m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "client", aBuf);
 		}
 
 		//
-		if(State() == IClient::STATE_CONNECTING && m_NetClient[CLIENT_MAIN].State() == NETSTATE_ONLINE)
+		if(State() == IClient::STATE_CONNECTING && m_NetClient[0].State() == NETSTATE_ONLINE)
 		{
 			// we switched to online
 			m_pConsole->Print(IConsole::OUTPUT_LEVEL_STANDARD, "client", "connected, sending info");
@@ -2405,31 +2405,28 @@ void CClient::PumpNetwork()
 		}
 	}
 
-	// process packets
 	CNetChunk Packet;
-	for(int i=0; i < NUM_CLIENTS; i++)
+	for(int i = 0; i < 2; i++)
 	{
+		// process non-connless packets
 		while(m_NetClient[i].Recv(&Packet))
 		{
-			if(Packet.m_ClientID == -1 || i > 1)
+			if(!(Packet.m_Flags&NETSENDFLAG_CONNLESS))
 			{
-				ProcessConnlessPacket(&Packet);
-			}
-			else if(i > 0 && i < 2)
-			{
-				if(g_Config.m_ClDummy)
-					ProcessServerPacket(&Packet); //self
+				if(i != g_Config.m_ClDummy)
+					ProcessServerPacketDummy(&Packet);
 				else
-					ProcessServerPacketDummy(&Packet); //multiclient
-			}
-			else
-			{
-				if(g_Config.m_ClDummy)
-					ProcessServerPacketDummy(&Packet); //multiclient
-				else
-					ProcessServerPacket(&Packet); //self
+					ProcessServerPacket(&Packet);
 			}
 		}
+	}
+
+	// process connless packets data
+	m_NetClient[CLIENT_CONTACT].Update();
+	while(m_NetClient[CLIENT_CONTACT].Recv(&Packet))
+	{
+		if(Packet.m_Flags&NETSENDFLAG_CONNLESS)
+			ProcessConnlessPacket(&Packet);
 	}
 }
 
