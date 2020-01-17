@@ -3018,6 +3018,8 @@ void CClient::Run()
 			m_aCmdPlayDemo[0] = 0;
 		}
 
+		// TODO: cracknet
+		/*
 		// progress on dummy connect if security token handshake skipped/passed
 		if(m_DummySendConnInfo && !m_NetClient[CLIENT_DUMMY].SecurityTokenUnknown())
 		{
@@ -3043,6 +3045,7 @@ void CClient::Run()
 			CMsgPacker MsgEnter(NETMSG_ENTERGAME);
 			SendMsgExY(&MsgEnter, MSGFLAG_VITAL|MSGFLAG_FLUSH, true, 1);
 		}
+		*/
 
 		// update input
 		if(Input()->Update())
