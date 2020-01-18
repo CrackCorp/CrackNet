@@ -748,12 +748,13 @@ int net_addr_from_str(NETADDR *addr, const char *string);
 
 	Parameters:
 		bindaddr - Address to bind the socket to.
+		use_random_port - use a random port
 
 	Returns:
 		On success it returns an handle to the socket. On failure it
 		returns NETSOCKET_INVALID.
 */
-NETSOCKET net_udp_create(NETADDR bindaddr);
+NETSOCKET net_udp_create(NETADDR bindaddr, int use_random_port);
 
 /*
 	Function: net_udp_send
@@ -791,20 +792,19 @@ void net_init_mmsgs(MMSGS* m);
 
 /*
 	Function: net_udp_recv
-		Receives a packet over an UDP socket.
+		Recives a packet over an UDP socket.
 
 	Parameters:
 		sock - Socket to use.
-		addr - Pointer to an NETADDR that will receive the address.
-		buffer - Pointer to a buffer that can be used to receive the data.
-		maxsize - Maximum size to receive.
-		data - Will get set to the actual data, might be the passed buffer or an internal one
+		addr - Pointer to an NETADDR that will recive the address.
+		data - Pointer to a buffer that will recive the data.
+		maxsize - Maximum size to recive.
 
 	Returns:
-		On success it returns the number of bytes received. Returns -1
+		On success it returns the number of bytes recived. Returns -1
 		on error.
 */
-int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *buffer, int maxsize, MMSGS* m, unsigned char **data);
+int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *data, int maxsize);
 
 /*
 	Function: net_udp_close
@@ -2009,6 +2009,19 @@ void secure_random_fill(void *bytes, unsigned length);
 		Returns random int (replacement for rand()).
 */
 int secure_rand();
+
+/*
+	Function: bytes_be_to_uint
+		Packs 4 big endian bytes into an unsigned
+
+	Returns:
+		The packed unsigned
+
+	Remarks:
+		- Assumes the passed array is 4 bytes
+		- Assumes unsigned is 4 bytes
+*/
+unsigned bytes_be_to_uint(const unsigned char *bytes);
 
 #ifdef __cplusplus
 }
