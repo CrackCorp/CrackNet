@@ -1329,7 +1329,7 @@ static int priv_net_close_all_sockets(NETSOCKET sock)
 	return 0;
 }
 
-static int priv_net_create_socket(int domain, int type, struct sockaddr *addr, int sockaddrlen)
+static int priv_net_create_socket(int domain, int type, struct sockaddr *addr, int sockaddrlen, int use_random_port)
 {
 	int sock, e;
 
@@ -1349,53 +1349,61 @@ static int priv_net_create_socket(int domain, int type, struct sockaddr *addr, i
 		return -1;
 	}
 
-#if defined(CONF_FAMILY_UNIX)
-	/* on tcp sockets set SO_REUSEADDR
-		to fix port rebind on restart */
-	if (domain == AF_INET && type == SOCK_STREAM)
-	{
-		int option = 1;
-		if(setsockopt(sock, SOL_SOCKET, SO_REUSEADDR, &option, sizeof(option)) != 0)
-			dbg_msg("socket", "Setting SO_REUSEADDR failed: %d", errno);
-	}
-#endif
-
-	/* set to IPv6 only if that's what we are creating */
+	/* set to IPv6 only if thats what we are creating */
 #if defined(IPV6_V6ONLY)	/* windows sdk 6.1 and higher */
 	if(domain == AF_INET6)
 	{
 		int ipv6only = 1;
-		if(setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&ipv6only, sizeof(ipv6only)) != 0)
-			dbg_msg("socket", "Setting V6ONLY failed: %d", errno);
+		setsockopt(sock, IPPROTO_IPV6, IPV6_V6ONLY, (const char*)&ipv6only, sizeof(ipv6only));
 	}
 #endif
 
 	/* bind the socket */
-	e = bind(sock, addr, sockaddrlen);
-	if(e != 0)
+	while(1)
 	{
+		/* pick random port */
+		if(use_random_port)
+		{
+			int port = htons(rand()%16384+49152);	/* 49152 to 65535 */
+			if(domain == AF_INET)
+				((struct sockaddr_in *)(addr))->sin_port = port;
+			else
+				((struct sockaddr_in6 *)(addr))->sin6_port = port;
+		}
+
+		e = bind(sock, addr, sockaddrlen);
+		if(e == 0)
+			break;
+		else
+		{
 #if defined(CONF_FAMILY_WINDOWS)
-		char buf[128];
-		int error = WSAGetLastError();
-		if(FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS, 0, error, 0, buf, sizeof(buf), 0) == 0)
-			buf[0] = 0;
-		dbg_msg("net", "failed to bind socket with domain %d and type %d (%d '%s')", domain, type, error, buf);
+			char buf[128];
+			int error = WSAGetLastError();
+			if(error == WSAEADDRINUSE && use_random_port)
+				continue;
+			if(FormatMessage(FORMAT_MESSAGE_FROM_SYSTEM|FORMAT_MESSAGE_IGNORE_INSERTS, 0, error, 0, buf, sizeof(buf), 0) == 0)
+				buf[0] = 0;
+			dbg_msg("net", "failed to bind socket with domain %d and type %d (%d '%s')", domain, type, error, buf);
 #else
-		dbg_msg("net", "failed to bind socket with domain %d and type %d (%d '%s')", domain, type, errno, strerror(errno));
+			if(errno == EADDRINUSE && use_random_port)
+				continue;
+			dbg_msg("net", "failed to bind socket with domain %d and type %d (%d '%s')", domain, type, errno, strerror(errno));
 #endif
-		priv_net_close_socket(sock);
-		return -1;
+			priv_net_close_socket(sock);
+			return -1;
+		}
 	}
 
 	/* return the newly created socket */
 	return sock;
 }
 
-NETSOCKET net_udp_create(NETADDR bindaddr)
+NETSOCKET net_udp_create(NETADDR bindaddr, int use_random_port)
 {
 	NETSOCKET sock = invalid_socket;
 	NETADDR tmpbindaddr = bindaddr;
 	int broadcast = 1;
+	int recvsize = 65536;
 
 	if(bindaddr.type&NETTYPE_IPV4)
 	{
@@ -1405,44 +1413,19 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 		/* bind, we should check for error */
 		tmpbindaddr.type = NETTYPE_IPV4;
 		netaddr_to_sockaddr_in(&tmpbindaddr, &addr);
-		socket = priv_net_create_socket(AF_INET, SOCK_DGRAM, (struct sockaddr *)&addr, sizeof(addr));
+		socket = priv_net_create_socket(AF_INET, SOCK_DGRAM, (struct sockaddr *)&addr, sizeof(addr), use_random_port);
 		if(socket >= 0)
 		{
 			sock.type |= NETTYPE_IPV4;
 			sock.ipv4sock = socket;
 
 			/* set broadcast */
-			if(setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast)) != 0)
-				dbg_msg("socket", "Setting BROADCAST on ipv4 failed: %d", errno);
+			setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
 
-			{
-				/* set DSCP/TOS */
-				int iptos = 0x10 /* IPTOS_LOWDELAY */;
-				//int iptos = 46; /* High Priority */
-				if(setsockopt(socket, IPPROTO_IP, IP_TOS, (char*)&iptos, sizeof(iptos)) != 0)
-					dbg_msg("socket", "Setting TOS on ipv4 failed: %d", errno);
-			}
+			/* set receive buffer size */
+			setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
 		}
 	}
-
-#if defined(CONF_WEBSOCKETS)
-	if(bindaddr.type&NETTYPE_WEBSOCKET_IPV4)
-	{
-		int socket = -1;
-		char addr_str[NETADDR_MAXSTRSIZE];
-
-		/* bind, we should check for error */
-		tmpbindaddr.type = NETTYPE_WEBSOCKET_IPV4;
-
-		net_addr_str(&tmpbindaddr, addr_str, sizeof(addr_str), 0);
-		socket = websocket_create(addr_str, tmpbindaddr.port);
-
-		if (socket >= 0) {
-			sock.type |= NETTYPE_WEBSOCKET_IPV4;
-			sock.web_ipv4sock = socket;
-		}
-	}
-#endif
 
 	if(bindaddr.type&NETTYPE_IPV6)
 	{
@@ -1452,36 +1435,22 @@ NETSOCKET net_udp_create(NETADDR bindaddr)
 		/* bind, we should check for error */
 		tmpbindaddr.type = NETTYPE_IPV6;
 		netaddr_to_sockaddr_in6(&tmpbindaddr, &addr);
-		socket = priv_net_create_socket(AF_INET6, SOCK_DGRAM, (struct sockaddr *)&addr, sizeof(addr));
+		socket = priv_net_create_socket(AF_INET6, SOCK_DGRAM, (struct sockaddr *)&addr, sizeof(addr), use_random_port);
 		if(socket >= 0)
 		{
 			sock.type |= NETTYPE_IPV6;
 			sock.ipv6sock = socket;
 
 			/* set broadcast */
-			if(setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast)) != 0)
-					dbg_msg("socket", "Setting BROADCAST on ipv6 failed: %d", errno);
+			setsockopt(socket, SOL_SOCKET, SO_BROADCAST, (const char*)&broadcast, sizeof(broadcast));
 
-			{
-				/* set DSCP/TOS */
-				int iptos = 0x10 /* IPTOS_LOWDELAY */;
-				//int iptos = 46; /* High Priority */
-				if(setsockopt(socket, IPPROTO_IP, IP_TOS, (char*)&iptos, sizeof(iptos)) != 0)
-					dbg_msg("socket", "Setting TOS on ipv6 failed: %d", errno);
-			}
+			/* set receive buffer size */
+			setsockopt(socket, SOL_SOCKET, SO_RCVBUF, (char*)&recvsize, sizeof(recvsize));
 		}
 	}
 
 	/* set non-blocking */
 	net_set_non_blocking(sock);
-
-#ifdef FUZZING
-	IOHANDLE file = io_open("bar.txt", IOFLAG_READ);
-	gs_NetPosition = 0;
-	gs_NetSize = io_length(file);
-	io_read(file, gs_NetData, 1024);
-	io_close(file);
-#endif /* FUZZING */
 
 	/* return */
 	return sock;
@@ -1590,68 +1559,23 @@ void net_init_mmsgs(MMSGS* m)
 #endif
 }
 
-int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *buffer, int maxsize, MMSGS* m, unsigned char **data)
+int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *data, int maxsize)
 {
-#ifndef FUZZING
 	char sockaddrbuf[128];
+	socklen_t fromlen;// = sizeof(sockaddrbuf);
 	int bytes = 0;
 
-#if defined(CONF_PLATFORM_LINUX)
 	if(sock.ipv4sock >= 0)
 	{
-		if(m->pos >= m->size)
-		{
-			m->size = recvmmsg(sock.ipv4sock, m->msgs, VLEN, 0, NULL);
-			m->pos = 0;
-		}
-	}
-
-	if(sock.ipv6sock >= 0)
-	{
-		if(m->pos >= m->size)
-		{
-			m->size = recvmmsg(sock.ipv6sock, m->msgs, VLEN, 0, NULL);
-			m->pos = 0;
-		}
-	}
-
-	if(m->pos < m->size)
-	{
-		sockaddr_to_netaddr((struct sockaddr *)&(m->sockaddrs[m->pos]), addr);
-		// TODO: network_stats
-		//network_stats.recv_bytes += bytes;
-		//network_stats.recv_packets++;
-		bytes = m->msgs[m->pos].msg_len;
-		*data = (unsigned char*)m->bufs[m->pos];
-		m->pos++;
-		return bytes;
-	}
-#else
-	if(bytes == 0 && sock.ipv4sock >= 0)
-	{
-		socklen_t fromlen = sizeof(struct sockaddr_in);
-		bytes = recvfrom(sock.ipv4sock, (char*)buffer, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
-		*data = buffer;
+		fromlen = sizeof(struct sockaddr_in);
+		bytes = recvfrom(sock.ipv4sock, (char*)data, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
 	}
 
 	if(bytes <= 0 && sock.ipv6sock >= 0)
 	{
-		socklen_t fromlen = sizeof(struct sockaddr_in6);
-		bytes = recvfrom(sock.ipv6sock, (char*)buffer, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
-		*data = buffer;
+		fromlen = sizeof(struct sockaddr_in6);
+		bytes = recvfrom(sock.ipv6sock, (char*)data, maxsize, 0, (struct sockaddr *)&sockaddrbuf, &fromlen);
 	}
-#endif
-
-#if defined(CONF_WEBSOCKETS)
-	if(bytes <= 0 && sock.web_ipv4sock >= 0)
-	{
-		socklen_t fromlen = sizeof(struct sockaddr);
-		struct sockaddr_in *sockaddrbuf_in = (struct sockaddr_in *)&sockaddrbuf;
-		bytes = websocket_recv(sock.web_ipv4sock, buffer, maxsize, sockaddrbuf_in, fromlen);
-		*data = buffer;
-		sockaddrbuf_in->sin_family = AF_WEBSOCKET_INET;
-	}
-#endif
 
 	if(bytes > 0)
 	{
@@ -1663,34 +1587,6 @@ int net_udp_recv(NETSOCKET sock, NETADDR *addr, void *buffer, int maxsize, MMSGS
 	else if(bytes == 0)
 		return 0;
 	return -1; /* error */
-#else /* ifdef FUZZING */
-	addr->type = NETTYPE_IPV4;
-	addr->port = 11111;
-	addr->ip[0] = 127;
-	addr->ip[1] = 0;
-	addr->ip[2] = 0;
-	addr->ip[3] = 1;
-
-	int CurrentData = 0;
-	while (gs_NetPosition < gs_NetSize && CurrentData < maxsize)
-	{
-		if(gs_NetData[gs_NetPosition] == '\n')
-		{
-			gs_NetPosition++;
-			break;
-		}
-
-		((unsigned char*)buffer)[CurrentData] = gs_NetData[gs_NetPosition];
-		*data = buffer;
-		CurrentData++;
-		gs_NetPosition++;
-	}
-
-	if (gs_NetPosition >= gs_NetSize)
-		exit(0);
-
-	return CurrentData;
-#endif /* FUZZING */
 }
 
 int net_udp_close(NETSOCKET sock)
@@ -1711,7 +1607,7 @@ NETSOCKET net_tcp_create(NETADDR bindaddr)
 		/* bind, we should check for error */
 		tmpbindaddr.type = NETTYPE_IPV4;
 		netaddr_to_sockaddr_in(&tmpbindaddr, &addr);
-		socket = priv_net_create_socket(AF_INET, SOCK_STREAM, (struct sockaddr *)&addr, sizeof(addr));
+		socket = priv_net_create_socket(AF_INET, SOCK_STREAM, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if(socket >= 0)
 		{
 			sock.type |= NETTYPE_IPV4;
@@ -1727,7 +1623,7 @@ NETSOCKET net_tcp_create(NETADDR bindaddr)
 		/* bind, we should check for error */
 		tmpbindaddr.type = NETTYPE_IPV6;
 		netaddr_to_sockaddr_in6(&tmpbindaddr, &addr);
-		socket = priv_net_create_socket(AF_INET6, SOCK_STREAM, (struct sockaddr *)&addr, sizeof(addr));
+		socket = priv_net_create_socket(AF_INET6, SOCK_STREAM, (struct sockaddr *)&addr, sizeof(addr), 0);
 		if(socket >= 0)
 		{
 			sock.type |= NETTYPE_IPV6;
@@ -3386,6 +3282,11 @@ int secure_rand()
 	unsigned int i;
 	secure_random_fill(&i, sizeof(i));
 	return (int)(i%RAND_MAX);
+}
+
+unsigned bytes_be_to_uint(const unsigned char *bytes)
+{
+	return (bytes[0]<<24) | (bytes[1]<<16) | (bytes[2]<<8) | bytes[3];
 }
 
 #if defined(__cplusplus)

@@ -657,14 +657,17 @@ void CServerBrowser::Refresh(int Type)
 		Packet.m_Flags = NETSENDFLAG_CONNLESS|NETSENDFLAG_EXTENDED;
 		Packet.m_DataSize = sizeof(Buffer);
 		Packet.m_pData = Buffer;
-		mem_zero(&Packet.m_aExtraData, sizeof(Packet.m_aExtraData));
+		// TODO: cracknet
+		// i guess all these extra packets are not useful in 0.7 yet
+		// so better be as 0.7 ish here as possible and wipe out all the old code
+		// mem_zero(&Packet.m_aExtraData, sizeof(Packet.m_aExtraData));
 
 		int Token = GenerateToken(Packet.m_Address);
 		mem_copy(Buffer, SERVERBROWSE_GETINFO, sizeof(SERVERBROWSE_GETINFO));
 		Buffer[sizeof(SERVERBROWSE_GETINFO)] = GetBasicToken(Token);
 
-		Packet.m_aExtraData[0] = GetExtraToken(Token) >> 8;
-		Packet.m_aExtraData[1] = GetExtraToken(Token) & 0xff;
+		// Packet.m_aExtraData[0] = GetExtraToken(Token) >> 8;
+		// Packet.m_aExtraData[1] = GetExtraToken(Token) & 0xff;
 
 		m_BroadcastTime = time_get();
 
@@ -752,9 +755,11 @@ void CServerBrowser::RequestImpl(const NETADDR &Addr, CServerEntry *pEntry) cons
 	Packet.m_Flags = NETSENDFLAG_CONNLESS|NETSENDFLAG_EXTENDED;
 	Packet.m_DataSize = sizeof(Buffer);
 	Packet.m_pData = Buffer;
+	/*
 	mem_zero(&Packet.m_aExtraData, sizeof(Packet.m_aExtraData));
 	Packet.m_aExtraData[0] = GetExtraToken(Token) >> 8;
 	Packet.m_aExtraData[1] = GetExtraToken(Token) & 0xff;
+	*/
 
 	m_pNetClient->Send(&Packet);
 
