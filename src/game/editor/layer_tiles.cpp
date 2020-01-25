@@ -508,10 +508,10 @@ void CLayerTiles::BrushFlipX()
 			m_pTiles[y*m_Width+m_Width-1-x] = Tmp;
 		}
 
-	if(m_Tele || m_Switch || m_Speedup || m_Tune)
+	if(m_Tele || m_Speedup || m_Tune)
 		return;
 
-	bool Rotate = !(m_Game || m_Front) || m_pEditor->m_AllowPlaceUnusedTiles;
+	bool Rotate = !(m_Game || m_Front || m_Switch) || m_pEditor->m_AllowPlaceUnusedTiles;
 	for(int y = 0; y < m_Height; y++)
 		for(int x = 0; x < m_Width; x++)
 			if(!Rotate && !IsRotatableTile(m_pTiles[y*m_Width+x].m_Index))
@@ -530,10 +530,10 @@ void CLayerTiles::BrushFlipY()
 			m_pTiles[(m_Height-1-y)*m_Width+x] = Tmp;
 		}
 
-	if(m_Tele || m_Switch || m_Speedup || m_Tune)
+	if(m_Tele || m_Speedup || m_Tune)
 		return;
 
-	bool Rotate = !(m_Game || m_Front) || m_pEditor->m_AllowPlaceUnusedTiles;
+	bool Rotate = !(m_Game || m_Front || m_Switch) || m_pEditor->m_AllowPlaceUnusedTiles;
 	for(int y = 0; y < m_Height; y++)
 		for(int x = 0; x < m_Width; x++)
 			if(!Rotate && !IsRotatableTile(m_pTiles[y*m_Width+x].m_Index))
@@ -861,7 +861,7 @@ int CLayerTiles::RenderProperties(CUIRect *pToolBox)
 		{"Shift by", m_pEditor->m_ShiftBy, PROPTYPE_INT_SCROLL, 1, 100000},
 		{"Image", m_Image, PROPTYPE_IMAGE, 0, 0},
 		{"Color", Color, PROPTYPE_COLOR, 0, 0},
-		{"Color Env", m_ColorEnv+1, PROPTYPE_INT_STEP, 0, m_pEditor->m_Map.m_lEnvelopes.size()+1},
+		{"Color Env", m_ColorEnv+1, PROPTYPE_ENVELOPE, 0, 0},
 		{"Color TO", m_ColorEnvOffset, PROPTYPE_INT_SCROLL, -1000000, 1000000},
 		{"Auto Rule", m_AutoMapperConfig, PROPTYPE_AUTOMAPPER, m_Image, 0},
 		{"Seed", m_Seed, PROPTYPE_INT_SCROLL, 0, 1000000000},
@@ -960,7 +960,8 @@ int CLayerTiles::RenderProperties(CUIRect *pToolBox)
 	return 0;
 }
 
-void CLayerTiles::FlagModified(int x, int y, int w, int h) {
+void CLayerTiles::FlagModified(int x, int y, int w, int h)
+{
 	m_pEditor->m_Map.m_Modified = true;
 	if (m_Seed != 0 && m_AutoMapperConfig != -1 && m_AutoAutoMap) {
 		m_pEditor->m_Map.m_lImages[m_Image]->m_AutoMapper.ProceedLocalized(this, m_AutoMapperConfig, m_Seed, x, y, w, h);
@@ -975,6 +976,7 @@ void CLayerTiles::ModifyImageIndex(INDEX_MODIFY_FUNC Func)
 
 void CLayerTiles::ModifyEnvelopeIndex(INDEX_MODIFY_FUNC Func)
 {
+	Func(&m_ColorEnv);
 }
 
 CLayerTele::CLayerTele(int w, int h)
@@ -1730,6 +1732,7 @@ void CLayerSwitch::BrushDraw(CLayer *pBrush, float wx, float wy)
 				m_pSwitchTile[fy*m_Width+fx].m_Type = l->m_pTiles[y*l->m_Width+x].m_Index;
 				m_pSwitchTile[fy*m_Width+fx].m_Flags = l->m_pTiles[y*l->m_Width+x].m_Flags;
 				m_pTiles[fy*m_Width+fx].m_Index = l->m_pTiles[y*l->m_Width+x].m_Index;
+				m_pTiles[fy*m_Width+fx].m_Flags = l->m_pTiles[y*l->m_Width+x].m_Flags;
 			}
 			else
 			{
@@ -1799,6 +1802,12 @@ void CLayerSwitch::BrushRotate(float Amount)
 			{
 				*pDst1 = pTempData1[y*m_Width+x];
 				*pDst2 = pTempData2[y*m_Width+x];
+				if(IsRotatableTile(pDst2->m_Index))
+				{
+					if(pDst2->m_Flags&TILEFLAG_ROTATE)
+						pDst2->m_Flags ^= (TILEFLAG_HFLIP|TILEFLAG_VFLIP);
+					pDst2->m_Flags ^= TILEFLAG_ROTATE;
+				}
 			}
 
 		int Temp = m_Width;

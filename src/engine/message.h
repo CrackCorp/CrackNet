@@ -21,7 +21,7 @@ public:
 		}
 		else
 		{
-			AddInt(0); // NETMSG_EX, NETMSGTYPE_EX
+			AddInt((0<<1)|(System?1:0)); // NETMSG_EX, NETMSGTYPE_EX
 			g_UuidManager.PackUuid(Type, this);
 		}
 	}

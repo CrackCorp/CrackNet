@@ -221,11 +221,6 @@ int CServer::SendMsg(CMsgPacker *pMsg, int Flags, int ClientID)
 	return 0;
 }
 
-int CServer::SendMsgEx(CMsgPacker *pMsg, int Flags, int ClientID, bool System)
-{
-	return 0;
-}
-
 void CServer::DoSnapshot()
 {
 }
