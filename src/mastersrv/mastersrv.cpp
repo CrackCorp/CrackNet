@@ -65,7 +65,7 @@ struct CCountPacketData
 	unsigned char m_Low;
 };
 
-static CCountPacketData m_CountData;
+// static CCountPacketData m_CountData;
 
 
 CNetBan m_NetBan;
@@ -282,6 +282,7 @@ void ReloadBans()
 
 int main(int argc, const char **argv) // ignore_convention
 {
+	/*
 	int64 LastBuild = 0, LastBanReload = 0;
 	ServerType Type = SERVERTYPE_INVALID;
 	NETADDR BindAddr;
@@ -458,6 +459,7 @@ int main(int argc, const char **argv) // ignore_convention
 		// be nice to the CPU
 		thread_sleep(1);
 	}
+	*/
 
 	return 0;
 }
