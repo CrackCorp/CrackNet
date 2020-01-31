@@ -159,6 +159,7 @@ int CCharacter::Team()
 
 CGameTeams* CCharacter::Teams()
 {
+	return NULL;
 }
 
 void CCharacter::HandleBroadcast()

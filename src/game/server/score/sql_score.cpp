@@ -44,7 +44,6 @@ m_pGameServer(pGameServer),
 m_pServer(pGameServer->Server())
 {
 	str_copy(m_aMap, g_Config.m_SvMap, sizeof(m_aMap));
-	FormatUuid(m_pGameServer->GameUuid(), m_aGameUuid, sizeof(m_aGameUuid));
 
 	CSqlData::ms_pGameServer = m_pGameServer;
 	CSqlData::ms_pServer = m_pServer;

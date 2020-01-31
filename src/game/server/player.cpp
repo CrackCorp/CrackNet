@@ -66,6 +66,7 @@ void CPlayer::OnPredictedEarlyInput(CNetObj_PlayerInput *NewInput)
 
 CCharacter *CPlayer::GetCharacter()
 {
+	return NULL;
 }
 
 void CPlayer::ThreadKillCharacter(int Weapon)
@@ -82,6 +83,7 @@ void CPlayer::Respawn(bool WeakHook)
 
 CCharacter* CPlayer::ForceSpawn(vec2 Pos)
 {
+	return NULL;
 }
 
 void CPlayer::SetTeam(int Team, bool DoChatMsg)

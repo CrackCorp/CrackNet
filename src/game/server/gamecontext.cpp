@@ -59,10 +59,12 @@ void CGameContext::CommandCallback(int ClientID, int FlagMask, const char *pCmd,
 
 class CCharacter *CGameContext::GetPlayerChar(int ClientID)
 {
+	return NULL;
 }
 
 bool CGameContext::EmulateBug(int Bug)
 {
+	return false;
 }
 
 void CGameContext::CreateDamageInd(vec2 Pos, float Angle, int Amount, int64_t Mask)
@@ -349,10 +351,6 @@ bool CGameContext::IsClientPlayer(int ClientID)
 	return false;
 }
 
-CUuid CGameContext::GameUuid() {
-	CUuid x;
-	return x;
-}
 const char *CGameContext::GameType() { return 0;
 }
 const char *CGameContext::Version() { return 0;
@@ -374,10 +372,12 @@ void CGameContext::SendChatResponse(const char *pLine, void *pUser, bool Highlig
 
 bool CGameContext::PlayerCollision()
 {
+	return false;
 }
 
 bool CGameContext::PlayerHooking()
 {
+	return false;
 }
 
 float CGameContext::PlayerJetpack()
@@ -409,6 +409,7 @@ void CGameContext::ResetTuning()
 
 bool CheckClientID2(int ClientID)
 {
+	return false;
 }
 
 void CGameContext::Whisper(int ClientID, char *pStr)

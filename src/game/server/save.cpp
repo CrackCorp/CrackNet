@@ -89,8 +89,6 @@ void CSaveTee::save(CCharacter *pChr)
 	m_HookTick = pChr->m_Core.m_HookTick;
 
 	m_HookState = pChr->m_Core.m_HookState;
-
-	FormatUuid(pChr->GameServer()->GameUuid(), aGameUuid, sizeof(aGameUuid));
 }
 
 void CSaveTee::load(CCharacter *pChr, int Team)

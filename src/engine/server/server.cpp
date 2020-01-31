@@ -166,6 +166,7 @@ int CServer::GetAuthedState(int ClientID)
 
 const char *CServer::GetAuthName(int ClientID)
 {
+	return NULL;
 }
 
 int CServer::GetClientInfo(int ClientID, CClientInfo *pInfo)
@@ -180,10 +181,12 @@ void CServer::GetClientAddr(int ClientID, char *pAddrStr, int Size)
 
 const char *CServer::ClientName(int ClientID)
 {
+	return NULL;
 }
 
 const char *CServer::ClientClan(int ClientID)
 {
+	return NULL;
 }
 
 int CServer::ClientCountry(int ClientID)
@@ -307,10 +310,6 @@ void CServer::SendServerInfoConnless(const NETADDR *pAddr, int Token, int Type)
 {
 }
 
-static inline int GetCacheIndex(int Type, bool SendClient)
-{
-}
-
 CServer::CCache::CCache()
 {
 }
@@ -386,11 +385,6 @@ void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
 {
 }
 
-static int GetAuthLevel(const char *pLevel)
-{
-	return 0;
-}
-
 void CServer::AuthRemoveKey(int KeySlot)
 {
 }
@@ -412,10 +406,6 @@ void CServer::ConAuthUpdateHashed(IConsole::IResult *pResult, void *pUser)
 }
 
 void CServer::ConAuthRemove(IConsole::IResult *pResult, void *pUser)
-{
-}
-
-static void ListKeysCallback(const char *pIdent, int Level, void *pUser)
 {
 }
 
@@ -564,13 +554,11 @@ void CServer::SnapFreeID(int ID)
 
 void *CServer::SnapNewItem(int Type, int ID, int Size)
 {
+	return NULL;
 }
 
 void CServer::SnapSetStaticsize(int ItemType, int Size)
 {
-}
-
-static CServer *CreateServer() {
 }
 
 int main(int argc, const char **argv) // ignore_convention
@@ -586,6 +574,7 @@ void CServer::GetClientAddr(int ClientID, NETADDR *pAddr)
 
 const char *CServer::GetAnnouncementLine(char const *pFileName)
 {
+	return NULL;
 }
 
 int *CServer::GetIdMap(int ClientID)

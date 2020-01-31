@@ -1624,22 +1624,6 @@ static void FormatMapDownloadFilename(const char *pName, const SHA256_DIGEST *pS
 		Temp ? ".tmp" : "");
 }
 
-static CServerCapabilities GetServerCapabilities(int Version, int Flags)
-{
-	CServerCapabilities Result;
-	bool DDNet = false;
-	if(Version >= 1)
-	{
-		DDNet = Flags&SERVERCAPFLAG_DDNET;
-	}
-	Result.m_ChatTimeoutCode = DDNet;
-	if(Version >= 1)
-	{
-		Result.m_ChatTimeoutCode = Flags&SERVERCAPFLAG_CHATTIMEOUTCODE;
-	}
-	return Result;
-}
-
 void CClient::ProcessServerPacket(CNetChunk *pPacket)
 {
 	CUnpacker Unpacker;

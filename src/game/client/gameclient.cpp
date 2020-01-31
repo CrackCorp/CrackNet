@@ -1125,7 +1125,7 @@ void CGameClient::OnNewSnapshot()
 	}
 #endif
 
-	bool FoundGameInfoEx = false;
+	// bool FoundGameInfoEx = false;
 
 	// go trough all the items in the snapshot and gather the info we want
 	{
@@ -2138,10 +2138,10 @@ void CGameClient::UpdatePrediction()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		if(m_Snap.m_aCharacters[i].m_Active)
 		{
-			bool IsLocal = (i == m_LocalClientID);
-			int GameTeam = (m_GameInfo.m_GameFlags&GAMEFLAG_TEAMS) ? m_aClients[i].m_Team : i;
 			// TODO: cracknet
 			/*
+			bool IsLocal = (i == m_LocalClientID);
+			int GameTeam = (m_GameInfo.m_GameFlags&GAMEFLAG_TEAMS) ? m_aClients[i].m_Team : i;
 			m_GameWorld.NetCharAdd(i, &m_Snap.m_aCharacters[i].m_Cur,
 					m_Snap.m_aCharacters[i].m_HasExtendedData ? &m_Snap.m_aCharacters[i].m_ExtendedData : 0,
 					GameTeam, IsLocal);
