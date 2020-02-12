@@ -110,8 +110,6 @@ public:
 	{
 		CClientInfo Info;
 		GetClientInfo(Client, &Info);
-		if (Info.m_ClientVersion >= VERSION_DDNET_OLD)
-			return true;
 		int *pMap = GetIdMap(Client);
 		bool Found = false;
 		for (int i = 0; i < VANILLA_MAX_CLIENTS; i++)
@@ -130,8 +128,6 @@ public:
 	{
 		CClientInfo Info;
 		GetClientInfo(Client, &Info);
-		if (Info.m_ClientVersion >= VERSION_DDNET_OLD)
-			return true;
 		Target = clamp(Target, 0, VANILLA_MAX_CLIENTS-1);
 		int *pMap = GetIdMap(Client);
 		if (pMap[Target] == -1)
