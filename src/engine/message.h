@@ -9,9 +9,6 @@
 class CMsgPacker : public CPacker
 {
 public:
-	// TODO: cracknet
-	// apply this commit from teeworlds/teeworlds
-	// 9023796d270b216c5859cc6b351a91a4656c58ec
 	CMsgPacker(int Type, bool System=false)
 	{
 		Reset();
