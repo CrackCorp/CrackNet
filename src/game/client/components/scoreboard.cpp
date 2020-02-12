@@ -103,8 +103,6 @@ void CScoreboard::RenderGoals(float x, float y, float w)
 
 void CScoreboard::RenderSpectators(float x, float y, float w)
 {
-	// TODO: cracknet
-	/*
 	float h = 140.0f;
 
 	// background
@@ -131,18 +129,23 @@ void CScoreboard::RenderSpectators(float x, float y, float w)
 	for(int i = 0; i < MAX_CLIENTS; ++i)
 	{
 		const CNetObj_PlayerInfo *pInfo = m_pClient->m_Snap.m_paInfoByName[i];
-		if(!pInfo || pInfo->m_Team != TEAM_SPECTATORS)
+		if(!pInfo || m_pClient->m_aClients[i].m_Team != TEAM_SPECTATORS)
 			continue;
 
 		if(Multiple)
 			TextRender()->TextEx(&Cursor, ", ", 2);
 
+		// TODO: cracknet
+		/*
 		if(m_pClient->m_aClients[pInfo->m_ClientID].m_AuthLevel)
 		{
 			ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClAuthedPlayerColor));
 			TextRender()->TextColor(Color);
 		}
+		*/
 
+		// TODO: cracknet
+		/*
 		if(g_Config.m_ClShowIDs)
 		{
 			char aBuffer[5];
@@ -151,391 +154,401 @@ void CScoreboard::RenderSpectators(float x, float y, float w)
 		}
 		TextRender()->TextEx(&Cursor, m_pClient->m_aClients[pInfo->m_ClientID].m_aName, -1);
 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+		*/
 
 		Multiple = true;
 	}
-	*/
 }
 
 void CScoreboard::RenderScoreboard(float x, float y, float w, int Team, const char *pTitle)
 {
-	// TODO: cracknet
-	// if(Team == TEAM_SPECTATORS)
-	// 	return;
+	if(Team == TEAM_SPECTATORS)
+		return;
 
-	// bool lower16 = false;
-	// bool upper16 = false;
-	// bool lower24 = false;
-	// bool upper24 = false;
-	// bool lower32 = false;
-	// bool upper32 = false;
+	const CGameClient::CSnapState& Snap = m_pClient->m_Snap;
 
-	// if(Team == -3)
-	// 	upper16 = true;
-	// else if(Team == -4)
-	// 	lower32 = true;
-	// else if(Team == -5)
-	// 	upper32 = true;
-	// else if(Team == -6)
-	// 	lower16 = true;
-	// else if(Team == -7)
-	// 	lower24 = true;
-	// else if(Team == -8)
-	// 	upper24 = true;
+	bool lower16 = false;
+	bool upper16 = false;
+	bool lower24 = false;
+	bool upper24 = false;
+	bool lower32 = false;
+	bool upper32 = false;
 
-	// if(Team < -1)
-	// 	Team = 0;
+	if(Team == -3)
+		upper16 = true;
+	else if(Team == -4)
+		lower32 = true;
+	else if(Team == -5)
+		upper32 = true;
+	else if(Team == -6)
+		lower16 = true;
+	else if(Team == -7)
+		lower24 = true;
+	else if(Team == -8)
+		upper24 = true;
 
-	// float h = 760.0f;
+	if(Team < -1)
+		Team = 0;
 
-	// // background
-	// Graphics()->BlendNormal();
-	// Graphics()->TextureClear();
-	// Graphics()->QuadsBegin();
-	// Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.5f);
-	// if(upper16 || upper32 || upper24)
-	// 	RenderTools()->DrawRoundRectExt(x, y, w, h, 17.0f, 10);
-	// else if(lower16 || lower32 || lower24)
-	// 	RenderTools()->DrawRoundRectExt(x, y, w, h, 17.0f, 5);
-	// else
-	// 	RenderTools()->DrawRoundRect(x, y, w, h, 17.0f);
-	// Graphics()->QuadsEnd();
+	float h = 760.0f;
 
-	// char aBuf[128] = {0};
+	// background
+	Graphics()->BlendNormal();
+	Graphics()->TextureClear();
+	Graphics()->QuadsBegin();
+	Graphics()->SetColor(0.0f, 0.0f, 0.0f, 0.5f);
+	if(upper16 || upper32 || upper24)
+		RenderTools()->DrawRoundRectExt(x, y, w, h, 17.0f, 10);
+	else if(lower16 || lower32 || lower24)
+		RenderTools()->DrawRoundRectExt(x, y, w, h, 17.0f, 5);
+	else
+		RenderTools()->DrawRoundRect(x, y, w, h, 17.0f);
+	Graphics()->QuadsEnd();
 
-	// // render title
-	// float TitleFontsize = 40.0f;
-	// if(!pTitle)
-	// {
-	// 	if(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER)
-	// 		pTitle = Localize("Game over");
-	// 	else
-	// 	{
-	// 		if(str_length(Client()->GetCurrentMap()) > 16)
-	// 		{
-	// 			str_truncate(aBuf, sizeof(aBuf), Client()->GetCurrentMap(), 16);
-	// 			str_append(aBuf, "...", sizeof(aBuf));
-	// 			pTitle = aBuf;
-	// 		}
-	// 		else
-	// 		{
-	// 			pTitle = Client()->GetCurrentMap();
-	// 		}
-	// 	}
-	// }
-	// TextRender()->Text(0, x + 20.0f, y + (50.f - TitleFontsize) / 2.f, TitleFontsize, pTitle, -1);
+	char aBuf[128] = {0};
 
-	// if(m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS)
-	// {
-	// 	if(m_pClient->m_Snap.m_pGameDataObj)
-	// 	{
-	// 		int Score = Team == TEAM_RED ? m_pClient->m_Snap.m_pGameDataObj->m_TeamscoreRed : m_pClient->m_Snap.m_pGameDataObj->m_TeamscoreBlue;
-	// 		str_format(aBuf, sizeof(aBuf), "%d", Score);
-	// 	}
-	// }
-	// else
-	// {
-	// 	if(m_pClient->m_Snap.m_SpecInfo.m_Active && m_pClient->m_Snap.m_SpecInfo.m_SpectatorID != SPEC_FREEVIEW &&
-	// 		m_pClient->m_Snap.m_paPlayerInfos[m_pClient->m_Snap.m_SpecInfo.m_SpectatorID])
-	// 	{
-	// 		int Score = m_pClient->m_Snap.m_paPlayerInfos[m_pClient->m_Snap.m_SpecInfo.m_SpectatorID]->m_Score;
-	// 		str_format(aBuf, sizeof(aBuf), "%d", Score);
-	// 	}
-	// 	else if(m_pClient->m_Snap.m_pLocalInfo)
-	// 	{
-	// 		int Score = m_pClient->m_Snap.m_pLocalInfo->m_Score;
-	// 		str_format(aBuf, sizeof(aBuf), "%d", Score);
-	// 	}
-	// }
+	// render title
+	float TitleFontsize = 40.0f;
+	if(!pTitle)
+	{
+		if(m_pClient->m_Snap.m_pGameData->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER)
+			pTitle = Localize("Game over");
+		else
+		{
+			if(str_length(Client()->GetCurrentMap()) > 16)
+			{
+				str_truncate(aBuf, sizeof(aBuf), Client()->GetCurrentMap(), 16);
+				str_append(aBuf, "...", sizeof(aBuf));
+				pTitle = aBuf;
+			}
+			else
+			{
+				pTitle = Client()->GetCurrentMap();
+			}
+		}
+	}
+	TextRender()->Text(0, x + 20.0f, y + (50.f - TitleFontsize) / 2.f, TitleFontsize, pTitle, -1);
 
-	// if(m_pClient->m_GameInfo.m_TimeScore && g_Config.m_ClDDRaceScoreBoard)
-	// {
-	// 	if (m_ServerRecord > 0)
-	// 	{
-	// 		str_format(aBuf, sizeof(aBuf), "%02d:%02d", ((int)m_ServerRecord)/60, ((int)m_ServerRecord)%60);
-	// 	}
-	// 	else
-	// 		aBuf[0] = 0;
-	// }
+	if(m_pClient->m_Snap.m_pGameData->m_GameStateFlags&GAMEFLAG_TEAMS)
+	{
+		if(m_pClient->m_Snap.m_pGameData)
+		{
+			int Score = Team == TEAM_RED ? m_pClient->m_Snap.m_pGameDataTeam->m_TeamscoreRed : m_pClient->m_Snap.m_pGameDataTeam->m_TeamscoreBlue;
+			str_format(aBuf, sizeof(aBuf), "%d", Score);
+		}
+	}
+	else
+	{
+		if(m_pClient->m_Snap.m_SpecInfo.m_Active && m_pClient->m_Snap.m_SpecInfo.m_SpectatorID != SPEC_FREEVIEW &&
+			m_pClient->m_Snap.m_paPlayerInfos[m_pClient->m_Snap.m_SpecInfo.m_SpectatorID])
+		{
+			int Score = m_pClient->m_Snap.m_paPlayerInfos[m_pClient->m_Snap.m_SpecInfo.m_SpectatorID]->m_Score;
+			str_format(aBuf, sizeof(aBuf), "%d", Score);
+		}
+		else if(m_pClient->m_Snap.m_pLocalInfo)
+		{
+			int Score = m_pClient->m_Snap.m_pLocalInfo->m_Score;
+			str_format(aBuf, sizeof(aBuf), "%d", Score);
+		}
+	}
 
-	// float tw;
+	if(m_pClient->m_GameInfo.m_TimeScore && g_Config.m_ClDDRaceScoreBoard)
+	{
+		if (m_ServerRecord > 0)
+		{
+			str_format(aBuf, sizeof(aBuf), "%02d:%02d", ((int)m_ServerRecord)/60, ((int)m_ServerRecord)%60);
+		}
+		else
+			aBuf[0] = 0;
+	}
 
-	// if (!lower16 && !lower32 && !lower24)
-	// {
-	// 	tw = TextRender()->TextWidth(0, TitleFontsize, aBuf, -1);
-	// 	TextRender()->Text(0, x+w-tw-20.0f, y + (50.f - TitleFontsize) / 2.f, TitleFontsize, aBuf, -1);
-	// }
+	float tw;
 
-	// // calculate measurements
-	// x += 10.0f;
-	// float LineHeight = 60.0f;
-	// float TeeSizeMod = 1.0f;
-	// float Spacing = 16.0f;
-	// float RoundRadius = 15.0f;
-	// if(m_pClient->m_Snap.m_aTeamSize[Team] > 48)
-	// {
-	// 	LineHeight = 20.0f;
-	// 	TeeSizeMod = 0.4f;
-	// 	Spacing = 0.0f;
-	// 	RoundRadius = 5.0f;
-	// }
-	// else if(m_pClient->m_Snap.m_aTeamSize[Team] > 32)
-	// {
-	// 	LineHeight = 27.0f;
-	// 	TeeSizeMod = 0.6f;
-	// 	Spacing = 0.0f;
-	// 	RoundRadius = 5.0f;
-	// }
-	// else if(m_pClient->m_Snap.m_aTeamSize[Team] > 12)
-	// {
-	// 	LineHeight = 40.0f;
-	// 	TeeSizeMod = 0.8f;
-	// 	Spacing = 0.0f;
-	// 	RoundRadius = 15.0f;
-	// }
-	// else if(m_pClient->m_Snap.m_aTeamSize[Team] > 8)
-	// {
-	// 	LineHeight = 50.0f;
-	// 	TeeSizeMod = 0.9f;
-	// 	Spacing = 5.0f;
-	// 	RoundRadius = 15.0f;
-	// }
+	if (!lower16 && !lower32 && !lower24)
+	{
+		tw = TextRender()->TextWidth(0, TitleFontsize, aBuf, -1);
+		TextRender()->Text(0, x+w-tw-20.0f, y + (50.f - TitleFontsize) / 2.f, TitleFontsize, aBuf, -1);
+	}
 
-	// float ScoreOffset = x+10.0f, ScoreLength = TextRender()->TextWidth(0, 22.0f/*HeadlineFontsize*/, "00:00:0", -1);
-	// float TeeOffset = ScoreOffset+ScoreLength, TeeLength = 60*TeeSizeMod;
-	// float NameOffset = TeeOffset+TeeLength, NameLength = 300.0f-TeeLength;
-	// float PingOffset = x+610.0f, PingLength = 65.0f;
-	// float CountryOffset = PingOffset-(LineHeight-Spacing-TeeSizeMod*5.0f)*2.0f, CountryLength = (LineHeight-Spacing-TeeSizeMod*5.0f)*2.0f;
-	// float ClanOffset = x+360.0f, ClanLength = 240.0f-CountryLength;
+	// calculate measurements
+	x += 10.0f;
+	float LineHeight = 60.0f;
+	float TeeSizeMod = 1.0f;
+	float Spacing = 16.0f;
+	float RoundRadius = 15.0f;
+	if(m_pClient->m_GameInfo.m_aTeamSize[Team] > 48)
+	{
+		LineHeight = 20.0f;
+		TeeSizeMod = 0.4f;
+		Spacing = 0.0f;
+		RoundRadius = 5.0f;
+	}
+	else if(m_pClient->m_GameInfo.m_aTeamSize[Team] > 32)
+	{
+		LineHeight = 27.0f;
+		TeeSizeMod = 0.6f;
+		Spacing = 0.0f;
+		RoundRadius = 5.0f;
+	}
+	else if(m_pClient->m_GameInfo.m_aTeamSize[Team] > 12)
+	{
+		LineHeight = 40.0f;
+		TeeSizeMod = 0.8f;
+		Spacing = 0.0f;
+		RoundRadius = 15.0f;
+	}
+	else if(m_pClient->m_GameInfo.m_aTeamSize[Team] > 8)
+	{
+		LineHeight = 50.0f;
+		TeeSizeMod = 0.9f;
+		Spacing = 5.0f;
+		RoundRadius = 15.0f;
+	}
 
-	// // render headlines
-	// y += 50.0f;
-	// float HeadlineFontsize = 22.0f;
-	// const char *pScore = (m_pClient->m_GameInfo.m_TimeScore && g_Config.m_ClDDRaceScoreBoard) ? Localize("Time") : Localize("Score");
-	// float ScoreWidth = TextRender()->TextWidth(0, HeadlineFontsize, pScore, -1);
-	// tw = ScoreLength > ScoreWidth ? ScoreLength : ScoreWidth;
-	// TextRender()->Text(0, ScoreOffset+ScoreLength-tw, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, pScore, -1);
+	float ScoreOffset = x+10.0f, ScoreLength = TextRender()->TextWidth(0, 22.0f/*HeadlineFontsize*/, "00:00:0", -1);
+	float TeeOffset = ScoreOffset+ScoreLength, TeeLength = 60*TeeSizeMod;
+	float NameOffset = TeeOffset+TeeLength, NameLength = 300.0f-TeeLength;
+	float PingOffset = x+610.0f, PingLength = 65.0f;
+	float CountryOffset = PingOffset-(LineHeight-Spacing-TeeSizeMod*5.0f)*2.0f, CountryLength = (LineHeight-Spacing-TeeSizeMod*5.0f)*2.0f;
+	float ClanOffset = x+360.0f, ClanLength = 240.0f-CountryLength;
 
-	// TextRender()->Text(0, NameOffset, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, Localize("Name"), -1);
+	// render headlines
+	y += 50.0f;
+	float HeadlineFontsize = 22.0f;
+	const char *pScore = (m_pClient->m_GameInfo.m_TimeScore && g_Config.m_ClDDRaceScoreBoard) ? Localize("Time") : Localize("Score");
+	float ScoreWidth = TextRender()->TextWidth(0, HeadlineFontsize, pScore, -1);
+	tw = ScoreLength > ScoreWidth ? ScoreLength : ScoreWidth;
+	TextRender()->Text(0, ScoreOffset+ScoreLength-tw, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, pScore, -1);
 
-	// tw = TextRender()->TextWidth(0, HeadlineFontsize, Localize("Clan"), -1);
-	// TextRender()->Text(0, ClanOffset+ClanLength/2-tw/2, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, Localize("Clan"), -1);
+	TextRender()->Text(0, NameOffset, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, Localize("Name"), -1);
 
-	// tw = TextRender()->TextWidth(0, HeadlineFontsize, Localize("Ping"), -1);
-	// TextRender()->Text(0, PingOffset+PingLength-tw, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, Localize("Ping"), -1);
+	tw = TextRender()->TextWidth(0, HeadlineFontsize, Localize("Clan"), -1);
+	TextRender()->Text(0, ClanOffset+ClanLength/2-tw/2, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, Localize("Clan"), -1);
 
-	// // render player entries
-	// y += HeadlineFontsize*2.0f;
-	// float FontSize = 24.0f;
-	// if(m_pClient->m_Snap.m_aTeamSize[Team] > 48)
-	// 	FontSize = 16.0f;
-	// else if(m_pClient->m_Snap.m_aTeamSize[Team] > 32)
-	// 	FontSize = 20.0f;
-	// CTextCursor Cursor;
+	tw = TextRender()->TextWidth(0, HeadlineFontsize, Localize("Ping"), -1);
+	TextRender()->Text(0, PingOffset+PingLength-tw, y + (HeadlineFontsize * 2.f - HeadlineFontsize) / 2.f, HeadlineFontsize, Localize("Ping"), -1);
 
-	// int rendered = 0;
-	// if (upper16)
-	// 	rendered = -16;
-	// if (upper32)
-	// 	rendered = -32;
-	// if (upper24)
-	// 	rendered = -24;
+	// render player entries
+	y += HeadlineFontsize*2.0f;
+	float FontSize = 24.0f;
+	if(m_pClient->m_GameInfo.m_aTeamSize[Team] > 48)
+		FontSize = 16.0f;
+	else if(m_pClient->m_GameInfo.m_aTeamSize[Team] > 32)
+		FontSize = 20.0f;
+	CTextCursor Cursor;
 
-	// int OldDDTeam = -1;
+	int rendered = 0;
+	if (upper16)
+		rendered = -16;
+	if (upper32)
+		rendered = -32;
+	if (upper24)
+		rendered = -24;
 
-	// for(int i = 0; i < MAX_CLIENTS; i++)
-	// {
-	// 	// make sure that we render the correct team
-	// 	const CNetObj_PlayerInfo *pInfo = m_pClient->m_Snap.m_paInfoByDDTeam[i];
-	// 	if(!pInfo || pInfo->m_Team != Team)
-	// 		continue;
+	int OldDDTeam = -1;
 
-	// 	if (rendered++ < 0) continue;
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		// make sure that we render the correct team
+		/*
+		const CNetObj_PlayerInfo *pInfo = m_pClient->m_Snap.m_paInfoByDDTeam[i];
+		if(!pInfo || pInfo->m_Team != Team)
+			continue;
+		*/
+		const CGameClient::CPlayerInfoItem *pInfo = &m_pClient->m_Snap.m_aInfoByScore[i];
+		if(!pInfo->m_pPlayerInfo || m_pClient->m_aClients[pInfo->m_ClientID].m_Team != Team)
+			continue;
 
-	// 	int DDTeam = m_pClient->m_Teams.Team(pInfo->m_ClientID);
-	// 	int NextDDTeam = 0;
+		if (rendered++ < 0) continue;
 
-	// 	for(int j = i + 1; j < MAX_CLIENTS; j++)
-	// 	{
-	// 		const CNetObj_PlayerInfo *pInfo2 = m_pClient->m_Snap.m_paInfoByDDTeam[j];
+		int DDTeam = m_pClient->m_Teams.Team(pInfo->m_ClientID);
+		int NextDDTeam = 0;
 
-	// 		if(!pInfo2 || pInfo2->m_Team != Team)
-	// 			continue;
+		for(int j = i + 1; j < MAX_CLIENTS; j++)
+		{
+			// const CNetObj_PlayerInfo *pInfo2 = m_pClient->m_Snap.m_paInfoByDDTeam[j];
+			const CGameClient::CPlayerInfoItem *pInfo2 = &m_pClient->m_Snap.m_aInfoByScore[j];
 
-	// 		NextDDTeam = m_pClient->m_Teams.Team(pInfo2->m_ClientID);
-	// 		break;
-	// 	}
 
-	// 	if (OldDDTeam == -1)
-	// 	{
-	// 		for (int j = i - 1; j >= 0; j--)
-	// 		{
-	// 			const CNetObj_PlayerInfo *pInfo2 = m_pClient->m_Snap.m_paInfoByDDTeam[j];
+			if(!pInfo2 || m_pClient->m_aClients[j].m_Team != Team)
+				continue;
 
-	// 			if(!pInfo2 || pInfo2->m_Team != Team)
-	// 				continue;
+			NextDDTeam = m_pClient->m_Teams.Team(pInfo2->m_ClientID);
+			break;
+		}
 
-	// 			OldDDTeam = m_pClient->m_Teams.Team(pInfo2->m_ClientID);
-	// 			break;
-	// 		}
-	// 	}
+		if (OldDDTeam == -1)
+		{
+			for (int j = i - 1; j >= 0; j--)
+			{
+				const CNetObj_PlayerInfo *pInfo2 = m_pClient->m_Snap.m_paInfoByName[j];
 
-	// 	if (DDTeam != TEAM_FLOCK)
-	// 	{
-	// 		Graphics()->TextureClear();
-	// 		Graphics()->QuadsBegin();
-	// 		ColorRGBA rgb = color_cast<ColorRGBA>(ColorHSLA(DDTeam / 64.0f, 1.0f, 0.5f, 0.5f));
-	// 		Graphics()->SetColor(rgb);
+				if(!pInfo2 || m_pClient->m_aClients[j].m_Team != Team)
+					continue;
 
-	// 		int Corners = 0;
+				OldDDTeam = m_pClient->m_Teams.Team(j);
+				break;
+			}
+		}
 
-	// 		if (OldDDTeam != DDTeam)
-	// 			Corners |= CUI::CORNER_TL | CUI::CORNER_TR;
-	// 		if (NextDDTeam != DDTeam)
-	// 			Corners |= CUI::CORNER_BL | CUI::CORNER_BR;
+		if (DDTeam != TEAM_FLOCK)
+		{
+			Graphics()->TextureClear();
+			Graphics()->QuadsBegin();
+			ColorRGBA rgb = color_cast<ColorRGBA>(ColorHSLA(DDTeam / 64.0f, 1.0f, 0.5f, 0.5f));
+			Graphics()->SetColor(rgb);
 
-	// 		RenderTools()->DrawRoundRectExt(x - 10.0f, y, w, LineHeight + Spacing, RoundRadius, Corners);
+			int Corners = 0;
 
-	// 		Graphics()->QuadsEnd();
+			if (OldDDTeam != DDTeam)
+				Corners |= CUI::CORNER_TL | CUI::CORNER_TR;
+			if (NextDDTeam != DDTeam)
+				Corners |= CUI::CORNER_BL | CUI::CORNER_BR;
 
-	// 		if (NextDDTeam != DDTeam)
-	// 		{
-	// 			char aBuf[64];
-	// 			if(m_pClient->m_Snap.m_aTeamSize[0] > 8)
-	// 			{
-	// 				str_format(aBuf, sizeof(aBuf),"%d", DDTeam);
-	// 				TextRender()->SetCursor(&Cursor, x - 10.0f, y + Spacing + FontSize - (FontSize/1.5f), FontSize/1.5f, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
-	// 				Cursor.m_LineWidth = NameLength+3;
-	// 			}
-	// 			else
-	// 			{
-	// 				str_format(aBuf, sizeof(aBuf),"Team %d", DDTeam);
-	// 				tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-	// 				TextRender()->SetCursor(&Cursor, ScoreOffset+w/2.0f-tw/2.0f, y + LineHeight, FontSize/1.5f, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
-	// 				Cursor.m_LineWidth = NameLength+3;
-	// 			}
-	// 			TextRender()->TextEx(&Cursor, aBuf, -1);
-	// 		}
-	// 	}
+			RenderTools()->DrawRoundRectExt(x - 10.0f, y, w, LineHeight + Spacing, RoundRadius, Corners);
 
-	// 	OldDDTeam = DDTeam;
+			Graphics()->QuadsEnd();
 
-	// 	// background so it's easy to find the local player or the followed one in spectator mode
-	// 	if(pInfo->m_Local || (m_pClient->m_Snap.m_SpecInfo.m_Active && pInfo->m_ClientID == m_pClient->m_Snap.m_SpecInfo.m_SpectatorID))
-	// 	{
-	// 		Graphics()->TextureClear();
-	// 		Graphics()->QuadsBegin();
-	// 		Graphics()->SetColor(1.0f, 1.0f, 1.0f, 0.25f);
-	// 		RenderTools()->DrawRoundRect(x, y, w-20.0f, LineHeight, RoundRadius);
-	// 		Graphics()->QuadsEnd();
-	// 	}
+			if (NextDDTeam != DDTeam)
+			{
+				char aBuf[64];
+				if(m_pClient->m_GameInfo.m_aTeamSize[0] > 8)
+				{
+					str_format(aBuf, sizeof(aBuf),"%d", DDTeam);
+					TextRender()->SetCursor(&Cursor, x - 10.0f, y + Spacing + FontSize - (FontSize/1.5f), FontSize/1.5f, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
+					Cursor.m_LineWidth = NameLength+3;
+				}
+				else
+				{
+					str_format(aBuf, sizeof(aBuf),"Team %d", DDTeam);
+					tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
+					TextRender()->SetCursor(&Cursor, ScoreOffset+w/2.0f-tw/2.0f, y + LineHeight, FontSize/1.5f, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
+					Cursor.m_LineWidth = NameLength+3;
+				}
+				TextRender()->TextEx(&Cursor, aBuf, -1);
+			}
+		}
 
-	// 	// score
-	// 	if(m_pClient->m_GameInfo.m_TimeScore && g_Config.m_ClDDRaceScoreBoard)
-	// 	{
-	// 		if (pInfo->m_Score == -9999)
-	// 			aBuf[0] = 0;
-	// 		else
-	// 		{
-	// 			int Time = abs(pInfo->m_Score);
-	// 			str_format(aBuf, sizeof(aBuf), "%02d:%02d", Time/60, Time%60);
-	// 		}
-	// 	}
-	// 	else
-	// 		str_format(aBuf, sizeof(aBuf), "%d", clamp(pInfo->m_Score, -999, 99999));
-	// 	tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
-	// 	TextRender()->SetCursor(&Cursor, ScoreOffset+ScoreLength-tw, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER);
-	// 	TextRender()->TextEx(&Cursor, aBuf, -1);
+		OldDDTeam = DDTeam;
 
-	// 	// flag
-	// 	if(m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_FLAGS &&
-	// 		m_pClient->m_Snap.m_pGameDataObj && (m_pClient->m_Snap.m_pGameDataObj->m_FlagCarrierRed == pInfo->m_ClientID ||
-	// 		m_pClient->m_Snap.m_pGameDataObj->m_FlagCarrierBlue == pInfo->m_ClientID))
-	// 	{
-	// 		Graphics()->BlendNormal();
-	// 		Graphics()->TextureSet(g_pData->m_aImages[IMAGE_GAME].m_Id);
-	// 		Graphics()->QuadsBegin();
+		const bool HighlightedLine = m_pClient->m_LocalClientID == pInfo->m_ClientID || (Snap.m_SpecInfo.m_Active && pInfo->m_ClientID == Snap.m_SpecInfo.m_SpectatorID);
 
-	// 		RenderTools()->SelectSprite(m_pClient->m_Snap.m_pGameDataObj->m_FlagCarrierBlue == pInfo->m_ClientID ? SPRITE_FLAG_BLUE : SPRITE_FLAG_RED, SPRITE_FLAG_FLIP_X);
+		// background so it's easy to find the local player or the followed one in spectator mode
+		if(HighlightedLine)
+		{
+			Graphics()->TextureClear();
+			Graphics()->QuadsBegin();
+			Graphics()->SetColor(1.0f, 1.0f, 1.0f, 0.25f);
+			RenderTools()->DrawRoundRect(x, y, w-20.0f, LineHeight, RoundRadius);
+			Graphics()->QuadsEnd();
+		}
 
-	// 		float Size = LineHeight;
-	// 		IGraphics::CQuadItem QuadItem(TeeOffset+0.0f, y-5.0f-Spacing/2.0f, Size/2.0f, Size);
-	// 		Graphics()->QuadsDrawTL(&QuadItem, 1);
-	// 		Graphics()->QuadsEnd();
-	// 	}
+		// score
+		if(m_pClient->m_GameInfo.m_TimeScore && g_Config.m_ClDDRaceScoreBoard)
+		{
+			if (pInfo->m_pPlayerInfo->m_Score == -9999)
+				aBuf[0] = 0;
+			else
+			{
+				int Time = abs(pInfo->m_pPlayerInfo->m_Score);
+				str_format(aBuf, sizeof(aBuf), "%02d:%02d", Time/60, Time%60);
+			}
+		}
+		else
+			str_format(aBuf, sizeof(aBuf), "%d", clamp(pInfo->m_pPlayerInfo->m_Score, -999, 99999));
+		tw = TextRender()->TextWidth(0, FontSize, aBuf, -1);
+		TextRender()->SetCursor(&Cursor, ScoreOffset+ScoreLength-tw, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER);
+		TextRender()->TextEx(&Cursor, aBuf, -1);
 
-	// 	// avatar
-	// 	CTeeRenderInfo TeeInfo = m_pClient->m_aClients[pInfo->m_ClientID].m_RenderInfo;
-	// 	TeeInfo.m_Size *= TeeSizeMod;
-	// 	RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeInfo, EMOTE_NORMAL, vec2(1.0f, 0.0f), vec2(TeeOffset+TeeLength/2, y+LineHeight/2));
+		// flag
+		if(m_pClient->m_Snap.m_pGameData->m_GameStateFlags&GAMEFLAG_FLAGS &&
+			m_pClient->m_Snap.m_pGameData && (m_pClient->m_Snap.m_pGameDataFlag->m_FlagCarrierRed == pInfo->m_ClientID ||
+			m_pClient->m_Snap.m_pGameDataFlag->m_FlagCarrierBlue == pInfo->m_ClientID))
+		{
+			Graphics()->BlendNormal();
+			Graphics()->TextureSet(g_pData->m_aImages[IMAGE_GAME].m_Id);
+			Graphics()->QuadsBegin();
 
-	// 	// name
-	// 	TextRender()->SetCursor(&Cursor, NameOffset, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
-	// 	if(m_pClient->m_aClients[pInfo->m_ClientID].m_AuthLevel)
-	// 	{
-	// 		ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClAuthedPlayerColor));
-	// 		TextRender()->TextColor(Color);
-	// 	}
+			RenderTools()->SelectSprite(m_pClient->m_Snap.m_pGameDataFlag->m_FlagCarrierBlue == pInfo->m_ClientID ? SPRITE_FLAG_BLUE : SPRITE_FLAG_RED, SPRITE_FLAG_FLIP_X);
 
-	// 	if(g_Config.m_ClShowIDs)
-	// 	{
-	// 		char aId[64] = "";
-	// 		str_format(aId, sizeof(aId)," %2d: ", pInfo->m_ClientID);
-	// 		str_append(aId, m_pClient->m_aClients[pInfo->m_ClientID].m_aName,sizeof(aId));
-	// 		Cursor.m_LineWidth = NameLength+8;
-	// 		TextRender()->TextEx(&Cursor, aId, -1);
-	// 	}
-	// 	else
-	// 	{
-	// 		Cursor.m_LineWidth = NameLength;
-	// 		TextRender()->TextEx(&Cursor, m_pClient->m_aClients[pInfo->m_ClientID].m_aName, -1);
-	// 	}
+			float Size = LineHeight;
+			IGraphics::CQuadItem QuadItem(TeeOffset+0.0f, y-5.0f-Spacing/2.0f, Size/2.0f, Size);
+			Graphics()->QuadsDrawTL(&QuadItem, 1);
+			Graphics()->QuadsEnd();
+		}
 
-	// 	// clan
-	// 	if(str_comp(m_pClient->m_aClients[pInfo->m_ClientID].m_aClan,
-	// 			m_pClient->m_aClients[GameClient()->m_LocalIDs[g_Config.m_ClDummy]].m_aClan) == 0)
-	// 	{
-	// 		ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClSameClanColor));
-	// 		TextRender()->TextColor(Color);
-	// 	}
-	// 	else
-	// 		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+		// avatar
+		CTeeRenderInfo TeeInfo = m_pClient->m_aClients[pInfo->m_ClientID].m_RenderInfo;
+		TeeInfo.m_Size *= TeeSizeMod;
+		RenderTools()->RenderTee(CAnimState::GetIdle(), &TeeInfo, EMOTE_NORMAL, vec2(1.0f, 0.0f), vec2(TeeOffset+TeeLength/2, y+LineHeight/2));
 
-	// 	tw = TextRender()->TextWidth(nullptr, FontSize, m_pClient->m_aClients[pInfo->m_ClientID].m_aClan, -1);
-	// 	TextRender()->SetCursor(&Cursor, ClanOffset + ClanLength / 2 - tw / 2, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
-	// 	Cursor.m_LineWidth = ClanLength;
-	// 	TextRender()->TextEx(&Cursor, m_pClient->m_aClients[pInfo->m_ClientID].m_aClan, -1);
+		// name
+		TextRender()->SetCursor(&Cursor, NameOffset, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
+		if(m_pClient->m_aClients[pInfo->m_ClientID].m_AuthLevel)
+		{
+			ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClAuthedPlayerColor));
+			TextRender()->TextColor(Color);
+		}
 
-	// 	TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+		if(g_Config.m_ClShowIDs)
+		{
+			char aId[64] = "";
+			str_format(aId, sizeof(aId)," %2d: ", pInfo->m_ClientID);
+			str_append(aId, m_pClient->m_aClients[pInfo->m_ClientID].m_aName,sizeof(aId));
+			Cursor.m_LineWidth = NameLength+8;
+			TextRender()->TextEx(&Cursor, aId, -1);
+		}
+		else
+		{
+			Cursor.m_LineWidth = NameLength;
+			TextRender()->TextEx(&Cursor, m_pClient->m_aClients[pInfo->m_ClientID].m_aName, -1);
+		}
 
-	// 	// country flag
-	// 	ColorRGBA Color(1.0f, 1.0f, 1.0f, 0.5f);
-	// 	m_pClient->m_pCountryFlags->Render(m_pClient->m_aClients[pInfo->m_ClientID].m_Country, &Color,
-	// 										CountryOffset, y+(Spacing+TeeSizeMod*5.0f)/2.0f, CountryLength, LineHeight-Spacing-TeeSizeMod*5.0f);
+		// clan
+		if(str_comp(m_pClient->m_aClients[pInfo->m_ClientID].m_aClan,
+				m_pClient->m_aClients[GameClient()->m_LocalIDs[g_Config.m_ClDummy]].m_aClan) == 0)
+		{
+			ColorRGBA Color = color_cast<ColorRGBA>(ColorHSLA(g_Config.m_ClSameClanColor));
+			TextRender()->TextColor(Color);
+		}
+		else
+			TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-	// 	// ping
-	// 	if(g_Config.m_ClEnablePingColor)
-	// 	{
-	// 		ColorRGBA rgb = color_cast<ColorRGBA>(ColorHSLA((300.0f - clamp(pInfo->m_Latency, 0, 300)) / 1000.0f, 1.0f, 0.5f));
-	// 		TextRender()->TextColor(rgb);
-	// 	}
-	// 	str_format(aBuf, sizeof(aBuf), "%d", clamp(pInfo->m_Latency, 0, 999));
-	// 	tw = TextRender()->TextWidth(nullptr, FontSize, aBuf, -1);
-	// 	TextRender()->SetCursor(&Cursor, PingOffset+PingLength-tw, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
-	// 	Cursor.m_LineWidth = PingLength;
-	// 	TextRender()->TextEx(&Cursor, aBuf, -1);
+		tw = TextRender()->TextWidth(nullptr, FontSize, m_pClient->m_aClients[pInfo->m_ClientID].m_aClan, -1);
+		TextRender()->SetCursor(&Cursor, ClanOffset + ClanLength / 2 - tw / 2, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
+		Cursor.m_LineWidth = ClanLength;
+		TextRender()->TextEx(&Cursor, m_pClient->m_aClients[pInfo->m_ClientID].m_aClan, -1);
 
-	// 	TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
 
-	// 	y += LineHeight+Spacing;
-	// 	if (lower32 || upper32) {
-	// 		if (rendered == 32) break;
-	// 	} else if (lower24 || upper24) {
-	// 		if (rendered == 24) break;
-	// 	} else {
-	// 		if (rendered == 16) break;
-	// 	}
-	// }
+		// country flag
+		ColorRGBA Color(1.0f, 1.0f, 1.0f, 0.5f);
+		m_pClient->m_pCountryFlags->Render(m_pClient->m_aClients[pInfo->m_ClientID].m_Country, &Color,
+											CountryOffset, y+(Spacing+TeeSizeMod*5.0f)/2.0f, CountryLength, LineHeight-Spacing-TeeSizeMod*5.0f);
+
+		// ping
+		if(g_Config.m_ClEnablePingColor)
+		{
+			ColorRGBA rgb = color_cast<ColorRGBA>(ColorHSLA((300.0f - clamp(pInfo->m_pPlayerInfo->m_Latency, 0, 300)) / 1000.0f, 1.0f, 0.5f));
+			TextRender()->TextColor(rgb);
+		}
+		str_format(aBuf, sizeof(aBuf), "%d", clamp(pInfo->m_pPlayerInfo->m_Latency, 0, 999));
+		tw = TextRender()->TextWidth(nullptr, FontSize, aBuf, -1);
+		TextRender()->SetCursor(&Cursor, PingOffset+PingLength-tw, y + (LineHeight - FontSize) / 2.f, FontSize, TEXTFLAG_RENDER|TEXTFLAG_STOP_AT_END);
+		Cursor.m_LineWidth = PingLength;
+		TextRender()->TextEx(&Cursor, aBuf, -1);
+
+		TextRender()->TextColor(1.0f, 1.0f, 1.0f, 1.0f);
+
+		y += LineHeight+Spacing;
+		if (lower32 || upper32) {
+			if (rendered == 32) break;
+		} else if (lower24 || upper24) {
+			if (rendered == 24) break;
+		} else {
+			if (rendered == 16) break;
+		}
+	}
 }
 
 void CScoreboard::RenderRecordingNotification(float x)
@@ -600,8 +613,6 @@ void CScoreboard::RenderRecordingNotification(float x)
 
 void CScoreboard::OnRender()
 {
-	// TODO: cracknet
-	/*
 	if(!Active())
 		return;
 
@@ -617,19 +628,19 @@ void CScoreboard::OnRender()
 
 	float w = 700.0f;
 
-	if(m_pClient->m_Snap.m_pGameDataObj)
+	if(m_pClient->m_Snap.m_pGameData)
 	{
-		if(!(m_pClient->m_Snap.m_pGameDataObj->m_GameFlags&GAMEFLAG_TEAMS))
+		if(!(m_pClient->m_GameInfo.m_GameFlags&GAMEFLAG_TEAMS))
 		{
-			if(m_pClient->m_Snap.m_aTeamSize[0] > 48)
+			if(m_pClient->m_GameInfo.m_aTeamSize[0] > 48)
 			{
 				RenderScoreboard(Width/2-w, 150.0f, w, -4, 0);
 				RenderScoreboard(Width/2, 150.0f, w, -5, "");
-			} else if(m_pClient->m_Snap.m_aTeamSize[0] > 32)
+			} else if(m_pClient->m_GameInfo.m_aTeamSize[0] > 32)
 			{
 				RenderScoreboard(Width/2-w, 150.0f, w, -7, 0);
 				RenderScoreboard(Width/2, 150.0f, w, -8, "");
-			} else if(m_pClient->m_Snap.m_aTeamSize[0] > 16)
+			} else if(m_pClient->m_GameInfo.m_aTeamSize[0] > 16)
 			{
 				RenderScoreboard(Width/2-w, 150.0f, w, -6, 0);
 				RenderScoreboard(Width/2, 150.0f, w, -3, "");
@@ -643,19 +654,19 @@ void CScoreboard::OnRender()
 			const char *pRedClanName = GetClanName(TEAM_RED);
 			const char *pBlueClanName = GetClanName(TEAM_BLUE);
 
-			if(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER && m_pClient->m_Snap.m_pGameDataObj)
+			if(m_pClient->m_Snap.m_pGameData->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER && m_pClient->m_Snap.m_pGameData)
 			{
 				char aText[256];
 				str_copy(aText, Localize("Draw!"), sizeof(aText));
 
-				if(m_pClient->m_Snap.m_pGameDataObj->m_TeamscoreRed > m_pClient->m_Snap.m_pGameDataObj->m_TeamscoreBlue)
+				if(m_pClient->m_Snap.m_pGameDataTeam->m_TeamscoreRed > m_pClient->m_Snap.m_pGameDataTeam->m_TeamscoreBlue)
 				{
 					if(pRedClanName)
 						str_format(aText, sizeof(aText), Localize("%s wins!"), pRedClanName);
 					else
 						str_copy(aText, Localize("Red team wins!"), sizeof(aText));
 				}
-				else if(m_pClient->m_Snap.m_pGameDataObj->m_TeamscoreBlue > m_pClient->m_Snap.m_pGameDataObj->m_TeamscoreRed)
+				else if(m_pClient->m_Snap.m_pGameDataTeam->m_TeamscoreBlue > m_pClient->m_Snap.m_pGameDataTeam->m_TeamscoreRed)
 				{
 					if(pBlueClanName)
 						str_format(aText, sizeof(aText), Localize("%s wins!"), pBlueClanName);
@@ -675,14 +686,10 @@ void CScoreboard::OnRender()
 	RenderGoals(Width/2-w/2, 150+760+10, w);
 	RenderSpectators(Width/2-w/2, 150+760+10+50+10, w);
 	RenderRecordingNotification((Width/7)*4);
-	*/
 }
 
 bool CScoreboard::Active()
 {
-	return false;
-	// TODO: cracknet
-	/*
 	// if statboard is active don't show scoreboard
 	if(m_pClient->m_pStatboard->IsActive())
 		return false;
@@ -690,7 +697,7 @@ bool CScoreboard::Active()
 	if(m_Active)
 		return true;
 
-	if(m_pClient->m_Snap.m_pLocalInfo && m_pClient->m_Snap.m_pLocalInfo->m_Team != TEAM_SPECTATORS)
+	if(m_pClient->m_Snap.m_pLocalInfo &&  m_pClient->m_aClients[m_pClient->m_LocalClientID].m_Team != TEAM_SPECTATORS)
 	{
 		// we are not a spectator, check if we are dead
 		if(!m_pClient->m_Snap.m_pLocalCharacter && g_Config.m_ClScoreboardOnDeath)
@@ -698,11 +705,10 @@ bool CScoreboard::Active()
 	}
 
 	// if the game is over
-	if(m_pClient->m_Snap.m_pGameDataObj && m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER)
+	if(m_pClient->m_Snap.m_pGameData && m_pClient->m_Snap.m_pGameData->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER)
 		return true;
 
 	return false;
-	*/
 }
 
 const char *CScoreboard::GetClanName(int Team)
