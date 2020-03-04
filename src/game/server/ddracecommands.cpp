@@ -709,6 +709,7 @@ void CGameContext::ConVoteNo(IConsole::IResult *pResult, void *pUserData)
 
 void CGameContext::ConDrySave(IConsole::IResult *pResult, void *pUserData)
 {
+	/*
 	CGameContext *pSelf = (CGameContext *)pUserData;
 
 	CPlayer *pPlayer = pSelf->m_apPlayers[pResult->m_ClientID];
@@ -730,4 +731,5 @@ void CGameContext::ConDrySave(IConsole::IResult *pResult, void *pUserData)
 	int Len = str_length(SavedTeam.GetString());
 	io_write(File, SavedTeam.GetString(), Len);
 	io_close(File);
+	*/
 }

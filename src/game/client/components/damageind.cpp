@@ -77,11 +77,7 @@ void CDamageInd::OnRender()
 			i++;
 		}
 	}
-<<<<<<< HEAD
-	s_LastLocalTime = Client()->LocalTime();
-=======
 	s_LastLocalTime = LocalTime();
->>>>>>> master
 
 	Graphics()->QuadsSetRotation(0);
 	Graphics()->SetColor(1.f, 1.f, 1.f, 1.f);
