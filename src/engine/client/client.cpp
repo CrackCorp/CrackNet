@@ -330,6 +330,7 @@ CClient::CClient() : m_DemoPlayer(&m_SnapshotDelta)
 	m_MapDetailsSha256 = SHA256_ZEROED;
 	m_MapDetailsCrc = 0;
 
+	str_format(m_aDDNetInfoTmp, sizeof(m_aDDNetInfoTmp), DDNET_INFO ".%d.tmp", pid());
 	m_pDDNetInfoTask = NULL;
 	m_aNews[0] = '\0';
 
@@ -1615,11 +1616,21 @@ static void FormatMapDownloadFilename(const char *pName, const SHA256_DIGEST *pS
 		sha256_str(*pSha256, aSha256 + 1, sizeof(aSha256) - 1);
 	}
 
-	str_format(pBuffer, BufferSize, "%s_%08x%s.map%s",
-		pName,
-		Crc,
-		aSha256,
-		Temp ? ".tmp" : "");
+	if(Temp)
+	{
+		str_format(pBuffer, BufferSize, "%s_%08x%s.map.%d.tmp",
+			pName,
+			Crc,
+			aSha256,
+			pid());
+	}
+	else
+	{
+		str_format(pBuffer, BufferSize, "%s_%08x%s.map",
+			pName,
+			Crc,
+			aSha256);
+	}
 }
 
 void CClient::ProcessServerPacket(CNetChunk *pPacket)
@@ -2052,6 +2063,22 @@ void CClient::ProcessServerPacket(CNetChunk *pPacket)
 						m_GameTime[g_Config.m_ClDummy].Update(&m_GametimeMarginGraph, (GameTick-1)*time_freq()/50, TimeLeft, 0);
 					}
 
+					if(m_ReceivedSnapshots[g_Config.m_ClDummy] > 50 && !m_aTimeoutCodeSent[g_Config.m_ClDummy])
+					{
+						if(m_ServerCapabilities.m_ChatTimeoutCode || ShouldSendChatTimeoutCodeHeuristic())
+						{
+							m_aTimeoutCodeSent[g_Config.m_ClDummy] = true;
+							CNetMsg_Cl_Say Msg;
+							Msg.m_Team = 0;
+							char aBuf[256];
+							str_format(aBuf, sizeof(aBuf), "/timeout %s", m_aTimeoutCodes[g_Config.m_ClDummy]);
+							Msg.m_pMessage = aBuf;
+							CMsgPacker Packer(Msg.MsgID(), false);
+							Msg.Pack(&Packer);
+							SendMsgY(&Packer, MSGFLAG_VITAL, g_Config.m_ClDummy);
+						}
+					}
+
 					// ack snapshot
 					m_AckGameTick[g_Config.m_ClDummy] = GameTick;
 				}
@@ -2366,7 +2393,7 @@ void CClient::ResetDDNetInfo()
 void CClient::FinishDDNetInfo()
 {
 	ResetDDNetInfo();
-	m_pStorage->RenameFile(DDNET_INFO_TMP, DDNET_INFO, IStorage::TYPE_SAVE);
+	m_pStorage->RenameFile(m_aDDNetInfoTmp, DDNET_INFO, IStorage::TYPE_SAVE);
 	LoadDDNetInfo();
 }
 
@@ -4205,7 +4232,7 @@ void CClient::RequestDDNetInfo()
 		str_append(aUrl, aEscaped, sizeof(aUrl));
 	}
 
-	m_pDDNetInfoTask = std::make_shared<CGetFile>(Storage(), aUrl, DDNET_INFO_TMP, IStorage::TYPE_SAVE, true);
+	m_pDDNetInfoTask = std::make_shared<CGetFile>(Storage(), aUrl, m_aDDNetInfoTmp, IStorage::TYPE_SAVE, true);
 	Engine()->AddJob(m_pDDNetInfoTask);
 }
 

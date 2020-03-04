@@ -2,11 +2,11 @@
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #ifndef GAME_VERSION_H
 #define GAME_VERSION_H
-#define GAME_VERSION "0.7.4, 12.8.1"
+#define GAME_VERSION "0.7.4, 12.9.2"
 #define GAME_NETVERSION_HASH_FORCED "802f1be60a05665f"
 #define GAME_NETVERSION "0.7 " GAME_NETVERSION_HASH_FORCED
-#define GAME_RELEASE_VERSION "12.8.1"
-#define CLIENT_VERSIONNR 12081
+#define GAME_RELEASE_VERSION "12.9.2"
+#define CLIENT_VERSIONNR 12092
 extern const char *GIT_SHORTREV_HASH;
 
 #define CRACKNET_VERSION "0001"
