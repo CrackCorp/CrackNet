@@ -495,6 +495,9 @@ void CGameClient::OnConnected()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		m_aLastWorldCharacters[i].m_Alive = false;
 	LoadMapSettings();
+
+	if(Client()->State() != IClient::STATE_DEMOPLAYBACK && g_Config.m_ClAutoDemoOnConnect)
+		Client()->DemoRecorder_HandleAutoStart();
 }
 
 void CGameClient::OnReset()
@@ -533,16 +536,29 @@ void CGameClient::UpdatePositions()
 		if(!m_Snap.m_pLocalCharacter ||
 			(m_Snap.m_pGameData && m_Snap.m_pGameData->m_GameStateFlags&(GAMESTATEFLAG_PAUSED|GAMESTATEFLAG_ROUNDOVER|GAMESTATEFLAG_GAMEOVER)))
 		{
-			// don't use predicted
+			if(!m_Snap.m_pLocalCharacter || (m_Snap.m_pGameData && m_Snap.m_pGameData->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER))
+			{
+				// don't use predicted
+			}
+			else
+				m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
 		}
 		else
-			m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick());
+		{
+			if(!(m_Snap.m_pGameData && m_Snap.m_pGameData->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER))
+			{
+				if(m_Snap.m_pLocalCharacter)
+					m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
+			}
+	//		else
+	//			m_LocalCharacterPos = mix(m_PredictedPrevChar.m_Pos, m_PredictedChar.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
+		}
 	}
 	else if(m_Snap.m_pLocalCharacter && m_Snap.m_pLocalPrevCharacter)
 	{
 		m_LocalCharacterPos = mix(
 			vec2(m_Snap.m_pLocalPrevCharacter->m_X, m_Snap.m_pLocalPrevCharacter->m_Y),
-			vec2(m_Snap.m_pLocalCharacter->m_X, m_Snap.m_pLocalCharacter->m_Y), Client()->IntraGameTick());
+			vec2(m_Snap.m_pLocalCharacter->m_X, m_Snap.m_pLocalCharacter->m_Y), Client()->IntraGameTick(g_Config.m_ClDummy));
 	}
 
 	// spectator position
@@ -554,8 +570,7 @@ void CGameClient::UpdatePositions()
 			m_Snap.m_SpecInfo.m_Position = mix(
 				vec2(m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Prev.m_X, m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Prev.m_Y),
 				vec2(m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Cur.m_X, m_Snap.m_aCharacters[m_Snap.m_SpecInfo.m_SpectatorID].m_Cur.m_Y),
-				Client()->IntraGameTick());
-			m_LocalCharacterPos = m_Snap.m_SpecInfo.m_Position;
+				Client()->IntraGameTick(g_Config.m_ClDummy));
 			m_Snap.m_SpecInfo.m_UsePosition = true;
 		}
 		else if(m_Snap.m_pSpectatorInfo && (Client()->State() == IClient::STATE_DEMOPLAYBACK || m_Snap.m_SpecInfo.m_SpecMode != SPEC_FREEVIEW ||
@@ -563,7 +578,7 @@ void CGameClient::UpdatePositions()
 		{
 			if(m_Snap.m_pPrevSpectatorInfo)
 				m_Snap.m_SpecInfo.m_Position = mix(vec2(m_Snap.m_pPrevSpectatorInfo->m_X, m_Snap.m_pPrevSpectatorInfo->m_Y),
-													vec2(m_Snap.m_pSpectatorInfo->m_X, m_Snap.m_pSpectatorInfo->m_Y), Client()->IntraGameTick());
+													vec2(m_Snap.m_pSpectatorInfo->m_X, m_Snap.m_pSpectatorInfo->m_Y), Client()->IntraGameTick(g_Config.m_ClDummy));
 			else
 				m_Snap.m_SpecInfo.m_Position = vec2(m_Snap.m_pSpectatorInfo->m_X, m_Snap.m_pSpectatorInfo->m_Y);
 			m_LocalCharacterPos = m_Snap.m_SpecInfo.m_Position;
@@ -769,7 +784,7 @@ void CGameClient::OnMessage(int MsgId, CUnpacker *pUnpacker, bool IsDummy)
 
 		// apply
 		m_aClients[pMsg->m_ClientID].m_Emoticon = pMsg->m_Emoticon;
-		m_aClients[pMsg->m_ClientID].m_EmoticonStart = Client()->GameTick();
+		m_aClients[pMsg->m_ClientID].m_EmoticonStart = Client()->GameTick(g_Config.m_ClDummy);
 	}
 	// TODO: cracknet
 	/*
@@ -874,7 +889,7 @@ void CGameClient::OnGameOver()
 
 void CGameClient::OnStartGame()
 {
-	if(Client()->State() != IClient::STATE_DEMOPLAYBACK)
+	if(Client()->State() != IClient::STATE_DEMOPLAYBACK && !g_Config.m_ClAutoDemoOnConnect)
 		Client()->DemoRecorder_HandleAutoStart();
 	m_pStatboard->OnReset();
 }
@@ -1109,7 +1124,7 @@ void CGameClient::OnNewSnapshot()
 #ifdef CONF_DEBUG
 	if(g_Config.m_DbgStress)
 	{
-		if((Client()->GameTick()%100) == 0)
+		if((Client()->GameTick(g_Config.m_ClDummy)%100) == 0)
 		{
 			char aMessage[64];
 			int MsgLen = rand()%(sizeof(aMessage)-1);
@@ -1213,7 +1228,7 @@ void CGameClient::OnNewSnapshot()
 					m_Snap.m_aCharacters[Item.m_ID].m_Prev = *((const CNetObj_Character *)pOld);
 
 					// reuse the result from the previous evolve if the snapped character didn't change since the previous snapshot
-					if(m_aClients[Item.m_ID].m_Evolved.m_Tick == Client()->PrevGameTick())
+					if(m_aClients[Item.m_ID].m_Evolved.m_Tick == Client()->PrevGameTick(g_Config.m_ClDummy))
 					{
 						if(mem_comp(&m_Snap.m_aCharacters[Item.m_ID].m_Prev, &m_aClients[Item.m_ID].m_Snapped, sizeof(CNetObj_Character)) == 0)
 							m_Snap.m_aCharacters[Item.m_ID].m_Prev = m_aClients[Item.m_ID].m_Evolved;
@@ -1222,9 +1237,9 @@ void CGameClient::OnNewSnapshot()
 					}
 
 					if(m_Snap.m_aCharacters[Item.m_ID].m_Prev.m_Tick)
-						Evolve(&m_Snap.m_aCharacters[Item.m_ID].m_Prev, Client()->PrevGameTick());
+						Evolve(&m_Snap.m_aCharacters[Item.m_ID].m_Prev, Client()->PrevGameTick(g_Config.m_ClDummy));
 					if(m_Snap.m_aCharacters[Item.m_ID].m_Cur.m_Tick)
-						Evolve(&m_Snap.m_aCharacters[Item.m_ID].m_Cur, Client()->GameTick());
+						Evolve(&m_Snap.m_aCharacters[Item.m_ID].m_Cur, Client()->GameTick(g_Config.m_ClDummy));
 
 					m_aClients[Item.m_ID].m_Snapped = *((const CNetObj_Character *)pData);
 					m_aClients[Item.m_ID].m_Evolved = m_Snap.m_aCharacters[Item.m_ID].m_Cur;
@@ -1307,14 +1322,14 @@ void CGameClient::OnNewSnapshot()
 				if(m_Snap.m_pGameDataFlag->m_FlagCarrierRed == FLAG_TAKEN)
 				{
 					if(m_FlagDropTick[TEAM_RED] == 0)
-						m_FlagDropTick[TEAM_RED] = Client()->GameTick();
+						m_FlagDropTick[TEAM_RED] = Client()->GameTick(g_Config.m_ClDummy);
 				}
 				else if(m_FlagDropTick[TEAM_RED] != 0)
 						m_FlagDropTick[TEAM_RED] = 0;
 				if(m_Snap.m_pGameDataFlag->m_FlagCarrierBlue == FLAG_TAKEN)
 				{
 					if(m_FlagDropTick[TEAM_BLUE] == 0)
-						m_FlagDropTick[TEAM_BLUE] = Client()->GameTick();
+						m_FlagDropTick[TEAM_BLUE] = Client()->GameTick(g_Config.m_ClDummy);
 				}
 				else if(m_FlagDropTick[TEAM_BLUE] != 0)
 						m_FlagDropTick[TEAM_BLUE] = 0;
@@ -1524,7 +1539,7 @@ void CGameClient::OnNewSnapshot()
 			{
 				vec2 Pos = mix(vec2(m_Snap.m_aCharacters[i].m_Prev.m_X, m_Snap.m_aCharacters[i].m_Prev.m_Y),
 						vec2(m_Snap.m_aCharacters[i].m_Cur.m_X, m_Snap.m_aCharacters[i].m_Cur.m_Y),
-						Client()->IntraGameTick());
+						Client()->IntraGameTick(g_Config.m_ClDummy));
 				m_pEffects->AirJump(Pos);
 			}
 
@@ -1577,10 +1592,10 @@ void CGameClient::OnPredict()
 		return;
 
 	// predict
-	for(int Tick = Client()->GameTick() + 1; Tick <= Client()->PredGameTick(); Tick++)
+	for(int Tick = Client()->GameTick(g_Config.m_ClDummy) + 1; Tick <= Client()->PredGameTick(g_Config.m_ClDummy); Tick++)
 	{
 		// fetch the previous characters
-		if(Tick == Client()->PredGameTick())
+		if(Tick == Client()->PredGameTick(g_Config.m_ClDummy))
 		{
 			m_PrevPredictedWorld.CopyWorld(&m_PredictedWorld);
 			m_PredictedPrevChar = pLocalChar->GetCore();
@@ -1590,7 +1605,7 @@ void CGameClient::OnPredict()
 		}
 
 		// optionally allow some movement in freeze by not predicting freeze the last one to two ticks
-		if(g_Config.m_ClPredictFreeze == 2 && Client()->PredGameTick() - 1 - Client()->PredGameTick()%2 <= Tick)
+		if(g_Config.m_ClPredictFreeze == 2 && Client()->PredGameTick(g_Config.m_ClDummy) - 1 - Client()->PredGameTick(g_Config.m_ClDummy)%2 <= Tick)
 			pLocalChar->m_CanMoveInFreeze = true;
 
 		// apply inputs and tick
@@ -1603,7 +1618,7 @@ void CGameClient::OnPredict()
 		m_PredictedWorld.Tick();
 
 		// fetch the current characters
-		if(Tick == Client()->PredGameTick())
+		if(Tick == Client()->PredGameTick(g_Config.m_ClDummy))
 		{
 			m_PredictedChar = pLocalChar->GetCore();
 			for(int i = 0; i < MAX_CLIENTS; i++)
@@ -1644,7 +1659,7 @@ void CGameClient::OnPredict()
 	static vec2 s_aLastPos[MAX_CLIENTS] = {{0,0}};
 	static bool s_aLastActive[MAX_CLIENTS] = {0};
 
-    if(g_Config.m_ClAntiPingSmooth && Predict() && AntiPingPlayers() && m_NewTick && abs(m_PredictedTick - Client()->PredGameTick()) <= 1 && abs(Client()->GameTick() - Client()->PrevGameTick()) <= 2)
+    if(g_Config.m_ClAntiPingSmooth && Predict() && AntiPingPlayers() && m_NewTick && abs(m_PredictedTick - Client()->PredGameTick(g_Config.m_ClDummy)) <= 1 && abs(Client()->GameTick(g_Config.m_ClDummy) - Client()->PrevGameTick(g_Config.m_ClDummy)) <= 2)
 	{
 		int PredTime = clamp(Client()->GetPredictionTime(), 0, 800);
 		float SmoothPace = 4 - 1.5f * PredTime/800.f; // smoothing pace (a lower value will make the smoothing quicker)
@@ -1654,15 +1669,15 @@ void CGameClient::OnPredict()
 		{
 			if(!m_Snap.m_aCharacters[i].m_Active || i == m_LocalClientID || !s_aLastActive[i])
 				continue;
-			vec2 NewPos = (m_PredictedTick == Client()->PredGameTick()) ? m_aClients[i].m_Predicted.m_Pos : m_aClients[i].m_PrevPredicted.m_Pos;
+			vec2 NewPos = (m_PredictedTick == Client()->PredGameTick(g_Config.m_ClDummy)) ? m_aClients[i].m_Predicted.m_Pos : m_aClients[i].m_PrevPredicted.m_Pos;
 			vec2 PredErr = (s_aLastPos[i] - NewPos)/(float)minimum(Client()->GetPredictionTime(), 200);
 			if(in_range(length(PredErr), 0.05f, 5.f))
 			{
-				vec2 PredPos = mix(m_aClients[i].m_PrevPredicted.m_Pos, m_aClients[i].m_Predicted.m_Pos, Client()->PredIntraGameTick());
+				vec2 PredPos = mix(m_aClients[i].m_PrevPredicted.m_Pos, m_aClients[i].m_Predicted.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
 				vec2 CurPos = mix(
 						vec2(m_Snap.m_aCharacters[i].m_Prev.m_X, m_Snap.m_aCharacters[i].m_Prev.m_Y),
 						vec2(m_Snap.m_aCharacters[i].m_Cur.m_X, m_Snap.m_aCharacters[i].m_Cur.m_Y),
-						Client()->IntraGameTick());
+						Client()->IntraGameTick(g_Config.m_ClDummy));
 				vec2 RenderDiff = PredPos - aBeforeRender[i];
 				vec2 PredDiff = PredPos - CurPos;
 
@@ -1712,7 +1727,7 @@ void CGameClient::OnPredict()
 			s_aLastActive[i] = false;
 	}
 
-	if(g_Config.m_Debug && g_Config.m_ClPredict && m_PredictedTick == Client()->PredGameTick())
+	if(g_Config.m_Debug && g_Config.m_ClPredict && m_PredictedTick == Client()->PredGameTick(g_Config.m_ClDummy))
 	{
 		CNetObj_CharacterCore Before = {0}, Now = {0}, BeforePrev = {0}, NowPrev = {0};
 		BeforeChar.Write(&Before);
@@ -1733,7 +1748,7 @@ void CGameClient::OnPredict()
 		}
 	}
 
-	m_PredictedTick = Client()->PredGameTick();
+	m_PredictedTick = Client()->PredGameTick(g_Config.m_ClDummy);
 
 	if(m_NewPredictedTick)
 		m_pGhost->OnNewPredictedSnapshot();
@@ -1987,7 +2002,7 @@ int CGameClient::IntersectCharacter(vec2 HookPos, vec2 NewPos, vec2& NewPos2, in
 		CNetObj_Character Prev = m_Snap.m_aCharacters[i].m_Prev;
 		CNetObj_Character Player = m_Snap.m_aCharacters[i].m_Cur;
 
-		vec2 Position = mix(vec2(Prev.m_X, Prev.m_Y), vec2(Player.m_X, Player.m_Y), Client()->IntraGameTick());
+		vec2 Position = mix(vec2(Prev.m_X, Prev.m_Y), vec2(Player.m_X, Player.m_Y), Client()->IntraGameTick(g_Config.m_ClDummy));
 
 		bool IsOneSuper = cData.m_Super || OwnClientData.m_Super;
 		bool IsOneSolo = cData.m_Solo || OwnClientData.m_Solo;
@@ -2094,9 +2109,9 @@ void CGameClient::UpdatePrediction()
 	}
 
 	// advance the gameworld to the current gametick
-	if(pLocalChar && abs(m_GameWorld.GameTick() - Client()->GameTick()) < SERVER_TICK_SPEED)
+	if(pLocalChar && abs(m_GameWorld.GameTick() - Client()->GameTick(g_Config.m_ClDummy)) < SERVER_TICK_SPEED)
 	{
-		for(int Tick = m_GameWorld.GameTick() + 1; Tick <= Client()->GameTick(); Tick++)
+		for(int Tick = m_GameWorld.GameTick() + 1; Tick <= Client()->GameTick(g_Config.m_ClDummy); Tick++)
 		{
 			CNetObj_PlayerInput *pInput = (CNetObj_PlayerInput*) Client()->GetDirectInput(Tick);
 			if(pInput)
@@ -2117,17 +2132,17 @@ void CGameClient::UpdatePrediction()
 	else
 	{
 		// skip to current gametick
-		m_GameWorld.m_GameTick = Client()->GameTick();
+		m_GameWorld.m_GameTick = Client()->GameTick(g_Config.m_ClDummy);
 		if(pLocalChar)
-			if(CNetObj_PlayerInput *pInput = (CNetObj_PlayerInput*) Client()->GetInput(Client()->GameTick()))
+			if(CNetObj_PlayerInput *pInput = (CNetObj_PlayerInput*) Client()->GetInput(Client()->GameTick(g_Config.m_ClDummy)))
 				pLocalChar->SetInput(pInput);
 	}
 
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		if(CCharacter *pChar = m_GameWorld.GetCharacterByID(i))
 		{
-			m_aClients[i].m_PredPos[Client()->GameTick() % 200] = pChar->Core()->m_Pos;
-			m_aClients[i].m_PredTick[Client()->GameTick() % 200] = Client()->GameTick();
+			m_aClients[i].m_PredPos[Client()->GameTick(g_Config.m_ClDummy) % 200] = pChar->Core()->m_Pos;
+			m_aClients[i].m_PredTick[Client()->GameTick(g_Config.m_ClDummy) % 200] = Client()->GameTick(g_Config.m_ClDummy);
 		}
 
 	// update the local gameworld with the new snapshot
@@ -2177,7 +2192,7 @@ void CGameClient::UpdateRenderedCharacters()
 		vec2 UnpredPos = mix(
 				vec2(m_Snap.m_aCharacters[i].m_Prev.m_X, m_Snap.m_aCharacters[i].m_Prev.m_Y),
 				vec2(m_Snap.m_aCharacters[i].m_Cur.m_X, m_Snap.m_aCharacters[i].m_Cur.m_Y),
-				Client()->IntraGameTick());
+				Client()->IntraGameTick(g_Config.m_ClDummy));
 		vec2 Pos = UnpredPos;
 
 		if(Predict() && (i == m_LocalClientID || AntiPingPlayers()))
@@ -2190,7 +2205,7 @@ void CGameClient::UpdateRenderedCharacters()
 			Pos = mix(
 					vec2(m_aClients[i].m_RenderPrev.m_X, m_aClients[i].m_RenderPrev.m_Y),
 					vec2(m_aClients[i].m_RenderCur.m_X, m_aClients[i].m_RenderCur.m_Y),
-					m_aClients[i].m_IsPredicted ? Client()->PredIntraGameTick() : Client()->IntraGameTick());
+					m_aClients[i].m_IsPredicted ? Client()->PredIntraGameTick(g_Config.m_ClDummy) : Client()->IntraGameTick(g_Config.m_ClDummy));
 
 			if(i == m_LocalClientID)
 			{
@@ -2232,7 +2247,7 @@ void CGameClient::DetectStrongHook()
 		int ToPlayer = m_Snap.m_aCharacters[FromPlayer].m_Prev.m_HookedPlayer;
 		if(ToPlayer < 0 || ToPlayer >= MAX_CLIENTS || !m_Snap.m_aCharacters[ToPlayer].m_Active || ToPlayer != m_Snap.m_aCharacters[FromPlayer].m_Cur.m_HookedPlayer)
 			continue;
-		if(abs(minimum(s_LastUpdateTick[ToPlayer], s_LastUpdateTick[FromPlayer]) - Client()->GameTick()) < SERVER_TICK_SPEED/4)
+		if(abs(minimum(s_LastUpdateTick[ToPlayer], s_LastUpdateTick[FromPlayer]) - Client()->GameTick(g_Config.m_ClDummy)) < SERVER_TICK_SPEED/4)
 			continue;
 		if(m_Snap.m_aCharacters[FromPlayer].m_Prev.m_Direction != m_Snap.m_aCharacters[FromPlayer].m_Cur.m_Direction
 				|| m_Snap.m_aCharacters[ToPlayer].m_Prev.m_Direction != m_Snap.m_aCharacters[ToPlayer].m_Cur.m_Direction)
@@ -2243,7 +2258,7 @@ void CGameClient::DetectStrongHook()
 		if(!pFromCharWorld || !pToCharWorld)
 			continue;
 
-		s_LastUpdateTick[ToPlayer] = s_LastUpdateTick[FromPlayer] = Client()->GameTick();
+		s_LastUpdateTick[ToPlayer] = s_LastUpdateTick[FromPlayer] = Client()->GameTick(g_Config.m_ClDummy);
 
 		float PredictErr[2];
 		CCharacterCore ToCharCur;
@@ -2264,7 +2279,7 @@ void CGameClient::DetectStrongHook()
 			World.m_apCharacters[FromPlayer] = &FromChar;
 			FromChar.Read(&m_Snap.m_aCharacters[FromPlayer].m_Prev);
 
-			for(int Tick = Client()->PrevGameTick(); Tick < Client()->GameTick(); Tick++)
+			for(int Tick = Client()->PrevGameTick(g_Config.m_ClDummy); Tick < Client()->GameTick(g_Config.m_ClDummy); Tick++)
 			{
 				if(dir == 0)
 				{
@@ -2310,7 +2325,7 @@ void CGameClient::DetectStrongHook()
 
 vec2 CGameClient::GetSmoothPos(int ClientID)
 {
-	vec2 Pos = mix(m_aClients[ClientID].m_PrevPredicted.m_Pos, m_aClients[ClientID].m_Predicted.m_Pos, Client()->PredIntraGameTick());
+	vec2 Pos = mix(m_aClients[ClientID].m_PrevPredicted.m_Pos, m_aClients[ClientID].m_Predicted.m_Pos, Client()->PredIntraGameTick(g_Config.m_ClDummy));
 	int64 Now = time_get();
 	for(int i = 0; i < 2; i++)
 	{
@@ -2322,7 +2337,7 @@ vec2 CGameClient::GetSmoothPos(int ClientID)
 			int SmoothTick;
 			float SmoothIntra;
 			Client()->GetSmoothTick(&SmoothTick, &SmoothIntra, MixAmount);
-			if(SmoothTick > 0 && m_aClients[ClientID].m_PredTick[(SmoothTick-1) % 200] >= Client()->PrevGameTick() && m_aClients[ClientID].m_PredTick[SmoothTick % 200] <= Client()->PredGameTick())
+			if(SmoothTick > 0 && m_aClients[ClientID].m_PredTick[(SmoothTick-1) % 200] >= Client()->PrevGameTick(g_Config.m_ClDummy) && m_aClients[ClientID].m_PredTick[SmoothTick % 200] <= Client()->PredGameTick(g_Config.m_ClDummy))
 				Pos[i] = mix(m_aClients[ClientID].m_PredPos[(SmoothTick-1) % 200][i], m_aClients[ClientID].m_PredPos[SmoothTick % 200][i], SmoothIntra);
 		}
 	}

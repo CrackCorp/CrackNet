@@ -80,6 +80,7 @@ option(WEBSOCKETS "Enable websockets support" OFF)
 option(MYSQL "Enable mysql support" OFF)
 option(AUTOUPDATE "Enable the autoupdater" ${AUTOUPDATE_DEFAULT})
 option(VIDEORECORDER "Enable video recording support via FFmpeg" OFF)
+option(ANTIBOT "Enable support for a dynamic anticheat library" OFF)
 option(CLIENT "Compile client" ON)
 option(DOWNLOAD_GTEST "Download and compile GTest" ${AUTO_DEPENDENCIES_DEFAULT})
 option(PREFER_BUNDLED_LIBS "Prefer bundled libraries over system libraries" ${AUTO_DEPENDENCIES_DEFAULT})
@@ -1035,6 +1036,12 @@ endif()
 ########################################################################
 
 # Sources
+set_src(ANTIBOT_SRC GLOB src/antibot
+  antibot_data.h
+  antibot_interface.h
+  antibot_null.cpp
+)
+
 set_src(ENGINE_SERVER GLOB src/engine/server
   authmanager.cpp
   authmanager.h
@@ -1052,6 +1059,8 @@ set_src(ENGINE_SERVER GLOB src/engine/server
   sql_string_helpers.h
 )
 set_src(GAME_SERVER GLOB_RECURSE src/game/server
+  antibot.cpp
+  antibot.h
   ddracechat.cpp
   ddracechat.h
   ddracecommands.cpp
@@ -1113,10 +1122,18 @@ else()
   set(SERVER_ICON)
 endif()
 
+# Antibot
+if(ANTIBOT)
+  set(TARGET_ANTIBOT antibot)
+  add_library(${TARGET_ANTIBOT} SHARED ${ANTIBOT_SRC})
+  list(APPEND TARGETS_OWN ${TARGET_ANTIBOT})
+endif()
+
 # Libraries
 set(LIBS_SERVER
   ${LIBS}
   ${MYSQL_LIBRARIES}
+  ${TARGET_ANTIBOT}
   # Add pthreads (on non-Windows) at the end, so that other libraries can depend
   # on it.
   ${CMAKE_THREAD_LIBS_INIT}
@@ -1134,6 +1151,14 @@ add_executable(${TARGET_SERVER}
 target_link_libraries(${TARGET_SERVER} ${LIBS_SERVER})
 list(APPEND TARGETS_OWN ${TARGET_SERVER})
 list(APPEND TARGETS_LINK ${TARGET_SERVER})
+
+if(ANTIBOT)
+  if(CMAKE_VERSION VERSION_LESS 3.14 AND (CMAKE_VERSION VERSION_GREATER 3.8 OR CMAKE_VERSION VERSION_EQUAL 3.8))
+    set_property(TARGET ${TARGET_SERVER} PROPERTY BUILD_RPATH "$ORIGIN")
+  else()
+    message(STATUS "Can't set BUILD_RPATH in CMake before 3.8, pass -Wl,-rpath,'$ORIGIN' manually if you wish to emulate this. Or just install a newer version of CMake...")
+  endif()
+endif()
 
 if(TARGET_OS AND TARGET_OS STREQUAL "mac")
   set(SERVER_LAUNCHER_SRC src/osxlaunch/server.mm)
@@ -1667,6 +1692,9 @@ foreach(target ${TARGETS_OWN})
     set_property(TARGET ${target} PROPERTY CXX_STANDARD 11)
     set_property(TARGET ${target} PROPERTY CXX_STANDARD_REQUIRED ON)
   endif()
+  if(CMAKE_VERSION VERSION_GREATER 3.14 OR CMAKE_VERSION VERSION_EQUAL 3.14)
+    set_property(TARGET ${TARGET_SERVER} PROPERTY BUILD_RPATH_USE_ORIGIN TRUE)
+  endif()
 
   if(MSVC)
     target_compile_options(${target} PRIVATE /wd4244) # Possible loss of data (float -> int, int -> float, etc.).
@@ -1691,6 +1719,9 @@ foreach(target ${TARGETS_OWN})
   endif()
   if(VIDEORECORDER)
     target_compile_definitions(${target} PRIVATE CONF_VIDEORECORDER)
+  endif()
+  if(ANTIBOT)
+    target_compile_definitions(${target} PRIVATE CONF_ANTIBOT)
   endif()
   if(MYSQL)
     target_compile_definitions(${target} PRIVATE CONF_SQL)

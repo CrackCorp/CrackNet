@@ -1,6 +1,7 @@
 /* (c) Magnus Auvinen. See licence.txt in the root of the distribution for more information. */
 /* If you are missing that file, acquire a complete release at teeworlds.com.                */
 #include <new>
+#include <antibot/antibot_data.h>
 #include <engine/shared/config.h>
 #include <game/server/gamecontext.h>
 #include <game/mapitems.h>
@@ -162,6 +163,22 @@ CGameTeams* CCharacter::Teams()
 	return NULL;
 }
 
+void CCharacter::FillAntibot(CAntibotCharacterData *pData)
+{
+	pData->m_Pos = m_Pos;
+	pData->m_Vel = m_Core.m_Vel;
+	pData->m_Angle = m_Core.m_Angle;
+	pData->m_HookedPlayer = m_Core.m_HookedPlayer;
+	pData->m_SpawnTick = m_SpawnTick;
+	pData->m_WeaponChangeTick = m_WeaponChangeTick;
+	pData->m_aLatestInputs[0].m_TargetX = m_LatestInput.m_TargetX;
+	pData->m_aLatestInputs[0].m_TargetY = m_LatestInput.m_TargetY;
+	pData->m_aLatestInputs[1].m_TargetX = m_LatestPrevInput.m_TargetX;
+	pData->m_aLatestInputs[1].m_TargetY = m_LatestPrevInput.m_TargetY;
+	pData->m_aLatestInputs[2].m_TargetX = m_LatestPrevPrevInput.m_TargetX;
+	pData->m_aLatestInputs[2].m_TargetY = m_LatestPrevPrevInput.m_TargetY;
+}
+
 void CCharacter::HandleBroadcast()
 {
 }
@@ -185,6 +202,11 @@ void CCharacter::HandleTuneLayer()
 
 void CCharacter::SendZoneMsgs()
 {
+}
+
+CAntibot *CCharacter::Antibot()
+{
+	return GameServer()->Antibot();
 }
 
 void CCharacter::DDRaceTick()

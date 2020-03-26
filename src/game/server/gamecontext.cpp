@@ -4,6 +4,7 @@
 
 #include <new>
 #include <base/math.h>
+#include <antibot/antibot_data.h>
 #include <engine/shared/config.h>
 #include <engine/map.h>
 #include <engine/console.h>
@@ -65,6 +66,48 @@ class CCharacter *CGameContext::GetPlayerChar(int ClientID)
 bool CGameContext::EmulateBug(int Bug)
 {
 	return false;
+}
+
+void CGameContext::FillAntibot(CAntibotData *pData)
+{
+	if(!pData->m_Map.m_pTiles)
+	{
+		Collision()->FillAntibot(&pData->m_Map);
+	}
+	pData->m_Tick = Server()->Tick();
+	mem_zero(pData->m_aCharacters, sizeof(pData->m_aCharacters));
+	for(int i = 0; i < MAX_CLIENTS; i++)
+	{
+		CAntibotCharacterData *pChar = &pData->m_aCharacters[i];
+		for(int i = 0; i < 3; i++)
+		{
+			pChar->m_aLatestInputs[i].m_TargetX = -1;
+			pChar->m_aLatestInputs[i].m_TargetY = -1;
+		}
+		pChar->m_Alive = false;
+		pChar->m_Pause = false;
+		pChar->m_Team = -1;
+
+		pChar->m_Pos = vec2(-1, -1);
+		pChar->m_Vel = vec2(0, 0);
+		pChar->m_Angle = -1;
+		pChar->m_HookedPlayer = -1;
+		pChar->m_SpawnTick = -1;
+		pChar->m_WeaponChangeTick = -1;
+
+		if(m_apPlayers[i])
+		{
+			str_copy(pChar->m_aName, Server()->ClientName(i), sizeof(pChar->m_aName));
+			CCharacter *pGameChar = m_apPlayers[i]->GetCharacter();
+			pChar->m_Alive = (bool)pGameChar;
+			pChar->m_Pause = m_apPlayers[i]->IsPaused();
+			pChar->m_Team = m_apPlayers[i]->GetTeam();
+			if(pGameChar)
+			{
+				pGameChar->FillAntibot(pChar);
+			}
+		}
+	}
 }
 
 void CGameContext::CreateDamageInd(vec2 Pos, float Angle, int Amount, int64_t Mask)
