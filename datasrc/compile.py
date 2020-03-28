@@ -329,7 +329,6 @@ if gen_network_source:
 	lines += ['};']
 	lines += ['']
 
-	# TODO: cracknet
 	lines += ['void RegisterGameUuids(CUuidManager *pManager)']
 	lines += ['{']
 	lines += ['}']

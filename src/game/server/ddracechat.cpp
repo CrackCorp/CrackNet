@@ -1303,9 +1303,9 @@ void CGameContext::ConSetTimerType(IConsole::IResult *pResult, void *pUserData)
 		return;
 
 	pSelf->Console()->Print(IConsole::OUTPUT_LEVEL_STANDARD, "timer", "gametimer is not supported in cracknet.");
-	char aBuf[128];
 
 	/*
+	char aBuf[128];
 	if(pResult->NumArguments() > 0)
 	{
 		int OldType = pPlayer->m_TimerType;
