@@ -449,6 +449,7 @@ void CServerBrowser::QueueRequest(CServerEntry *pEntry)
 
 void CServerBrowser::SetInfo(CServerEntry *pEntry, const CServerInfo &Info)
 {
+	dbg_msg("XXXXXXXXXXXXXXXXXXXXX", __func__);
 	bool Fav = pEntry->m_Info.m_Favorite;
 	bool Off = pEntry->m_Info.m_Official;
 	pEntry->m_Info = Info;
@@ -547,6 +548,7 @@ CServerBrowser::CServerEntry *CServerBrowser::Add(const NETADDR &Addr)
 
 void CServerBrowser::Set(const NETADDR &Addr, int Type, int Token, const CServerInfo *pInfo)
 {
+	dbg_msg("XXXXXXXXXXXXXXXXXXXXX", "%s type=%d", __func__, Type);
 	CServerEntry *pEntry = 0;
 	if(Type == IServerBrowser::SET_MASTER_ADD)
 	{
@@ -688,12 +690,8 @@ void CServerBrowser::Refresh(int Type)
 		m_NumRequests = 0;
 
 		m_NeedRefresh = 1;
-		// TODO: cracknet
-		/*
-		for(int i = 0; i < m_ServerBrowserFavorites.m_NumFavoriteServers; i++)
-			if(m_ServerBrowserFavorites.m_aFavoriteServers[i].m_State >= CServerBrowserFavorites::FAVSTATE_ADDR)
-				Set(m_ServerBrowserFavorites.m_aFavoriteServers[i].m_Addr, SET_FAV_ADD, -1, 0);
-		*/
+		for(int i = 0; i < m_NumFavoriteServers; i++)
+			Set(m_aFavoriteServers[i], IServerBrowser::SET_FAV_ADD, -1, 0);
 	}
 	else if(Type == IServerBrowser::TYPE_FAVORITES)
 	{
