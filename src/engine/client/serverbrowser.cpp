@@ -34,6 +34,15 @@ public:
 	bool operator()(int a, int b) { return (g_Config.m_BrSortOrder ? (m_pThis->*m_pfnSort)(b, a) : (m_pThis->*m_pfnSort)(a, b)); }
 };
 
+inline int AddrHash(const NETADDR *pAddr)
+{
+	if(pAddr->type==NETTYPE_IPV4)
+		return (pAddr->ip[0]+pAddr->ip[1]+pAddr->ip[2]+pAddr->ip[3])&0xFF;
+	else
+		return (pAddr->ip[0]+pAddr->ip[1]+pAddr->ip[2]+pAddr->ip[3]+pAddr->ip[4]+pAddr->ip[5]+pAddr->ip[6]+pAddr->ip[7]+
+			pAddr->ip[8]+pAddr->ip[9]+pAddr->ip[10]+pAddr->ip[11]+pAddr->ip[12]+pAddr->ip[13]+pAddr->ip[14]+pAddr->ip[15])&0xFF;
+}
+
 inline int GetNewToken()
 {
 	return random_int();
@@ -63,6 +72,9 @@ CServerBrowser::CServerBrowser()
 	m_Sorthash = 0;
 	m_aFilterString[0] = 0;
 	m_aFilterGametypeString[0] = 0;
+
+	// the token is to keep server refresh separated from each other
+	m_CurrentLanToken = 1;
 
 	m_ServerlistType = 0;
 	m_BroadcastTime = 0;
@@ -459,10 +471,12 @@ void CServerBrowser::SetInfo(CServerEntry *pEntry, const CServerInfo &Info)
 	}*/
 
 	pEntry->m_GotInfo = 1;
+	pEntry->m_InfoState = CServerEntry::STATE_READY;
 }
 
 CServerBrowser::CServerEntry *CServerBrowser::Add(const NETADDR &Addr)
 {
+	// int Hash = AddrHash(&Addr); // yeet
 	int Hash = Addr.ip[0];
 	CServerEntry *pEntry = 0;
 	int i;
@@ -473,6 +487,8 @@ CServerBrowser::CServerEntry *CServerBrowser::Add(const NETADDR &Addr)
 
 	// set the info
 	pEntry->m_Addr = Addr;
+	pEntry->m_InfoState = CServerEntry::STATE_INVALID;
+	pEntry->m_CurrentToken = GetNewToken();
 	pEntry->m_Info.m_NetAddr = Addr;
 
 	pEntry->m_Info.m_Latency = 999;
