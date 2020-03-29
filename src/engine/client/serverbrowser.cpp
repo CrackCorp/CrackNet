@@ -578,56 +578,28 @@ void CServerBrowser::Set(const NETADDR &Addr, int Type, int Token, const CServer
 	}
 	else if(Type == IServerBrowser::SET_TOKEN)
 	{
-		int BasicToken = Token;
-		int ExtraToken = 0;
-		if(pInfo->m_Type == SERVERINFO_EXTENDED)
+		// internet entry
+		if(Type == IServerBrowser::REFRESHFLAG_INTERNET)
 		{
-			BasicToken = Token & 0xff;
-			ExtraToken = Token >> 8;
+			pEntry = Find(Addr);
+			if(pEntry && (pEntry->m_InfoState != CServerEntry::STATE_PENDING || Token != pEntry->m_CurrentToken))
+				pEntry = 0;
 		}
 
-		pEntry = Find(Addr);
-		if(m_ServerlistType != IServerBrowser::TYPE_LAN)
+		// lan entry
+		if(!pEntry && (Type == IServerBrowser::REFRESHFLAG_LAN) && m_BroadcastTime+time_freq() >= time_get())
 		{
-			if(!pEntry)
-			{
-				return;
-			}
-			int Token = GenerateToken(Addr);
-			bool Drop = false;
-			Drop = Drop || BasicToken != GetBasicToken(Token);
-			Drop = Drop || (pInfo->m_Type == SERVERINFO_EXTENDED && ExtraToken != GetExtraToken(Token));
-			if(Drop)
-			{
-				return;
-			}
-		}
-		if(!pEntry)
 			pEntry = Add(Addr);
+		}
+
+		// set info
 		if(pEntry)
 		{
-			if(m_ServerlistType == IServerBrowser::TYPE_LAN)
-			{
-				NETADDR Broadcast;
-				mem_zero(&Broadcast, sizeof(Broadcast));
-				Broadcast.type = m_pNetClient->NetType()|NETTYPE_LINK_BROADCAST;
-				int Token = GenerateToken(Broadcast);
-				bool Drop = false;
-				Drop = Drop || BasicToken != GetBasicToken(Token);
-				Drop = Drop || (pInfo->m_Type == SERVERINFO_EXTENDED && ExtraToken != GetExtraToken(Token));
-				if(Drop)
-				{
-					return;
-				}
-			}
 			SetInfo(pEntry, *pInfo);
-			if (m_ServerlistType == IServerBrowser::TYPE_LAN)
+			if(Type == IServerBrowser::TYPE_LAN)
 				pEntry->m_Info.m_Latency = minimum(static_cast<int>((time_get()-m_BroadcastTime)*1000/time_freq()), 999);
-			else if (pEntry->m_RequestTime > 0)
-			{
+			else
 				pEntry->m_Info.m_Latency = minimum(static_cast<int>((time_get()-pEntry->m_RequestTime)*1000/time_freq()), 999);
-				pEntry->m_RequestTime = -1; // Request has been answered
-			}
 			RemoveRequest(pEntry);
 		}
 	}
