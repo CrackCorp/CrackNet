@@ -825,6 +825,7 @@ if(CLIENT)
     opengl_sl_program.h
     serverbrowser.cpp
     serverbrowser.h
+    serverbrowser_entry.h
     sound.cpp
     sound.h
     text.cpp

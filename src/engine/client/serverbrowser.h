@@ -4,6 +4,7 @@
 #define ENGINE_CLIENT_SERVERBROWSER_H
 
 #include <engine/serverbrowser.h>
+#include "serverbrowser_entry.h"
 #include <engine/shared/memheap.h>
 #include <engine/external/json-parser/json.h>
 
@@ -13,16 +14,28 @@ public:
 	class CServerEntry
 	{
 	public:
+		enum
+		{
+			STATE_INVALID=0,
+			STATE_PENDING,
+			STATE_READY,
+		};
+
 		NETADDR m_Addr;
 		int64 m_RequestTime;
-		int m_GotInfo;
-		bool m_Request64Legacy;
-		CServerInfo m_Info;
+		int m_InfoState;
+		int m_CurrentToken;	// the token is to keep server refresh separated from each other
+		int m_TrackID;
+		class CServerInfo m_Info;
 
 		CServerEntry *m_pNextIp; // ip hashed list
 
 		CServerEntry *m_pPrevReq; // request list
 		CServerEntry *m_pNextReq;
+
+		// TODO: cracknet
+		int m_GotInfo; // remove this 0.6 code
+		bool m_Request64Legacy; // remove this 0.6 code
 	};
 
 	struct CNetworkCountry
@@ -116,7 +129,7 @@ public:
 	//
 	void Update(bool ForceResort);
 	void Set(const NETADDR &Addr, int Type, int Token, const CServerInfo *pInfo);
-	void RequestCurrentServer(const NETADDR &Addr) const;
+	void RequestCurrentServer(const NETADDR &Addr);
 
 	void SetBaseInfo(class CNetClient *pClient, const char *pNetVersion);
 
@@ -124,6 +137,8 @@ public:
 	void QueueRequest(CServerEntry *pEntry);
 	CServerEntry *Find(const NETADDR &Addr);
 	int GetCurrentType() { return m_ServerlistType; };
+
+	static void CBFTrackPacket(int TrackID, void *pUser);
 
 private:
 	CNetClient *m_pNetClient;
@@ -166,8 +181,12 @@ private:
 	char m_aFilterString[64];
 	char m_aFilterGametypeString[128];
 
+	// the token is to keep server refresh separated from each other
+	int m_CurrentLanToken;
+
 	int m_ServerlistType;
 	int64 m_BroadcastTime;
+	int64 m_MasterRefreshTime;
 	int m_RequestNumber;
 	unsigned char m_aTokenSeed[16];
 
@@ -192,7 +211,7 @@ private:
 
 	void RemoveRequest(CServerEntry *pEntry);
 
-	void RequestImpl(const NETADDR &Addr, CServerEntry *pEntry) const;
+	void RequestImpl(const NETADDR &Addr, CServerEntry *pEntry);
 
 	void SetInfo(CServerEntry *pEntry, const CServerInfo &Info);
 

@@ -10,6 +10,7 @@
 #include <engine/shared/json.h>
 #include <engine/shared/memheap.h>
 #include <engine/shared/network.h>
+#include <engine/shared/packer.h>
 #include <engine/shared/protocol.h>
 
 #include <engine/config.h>
@@ -32,6 +33,11 @@ public:
 	SortWrap(CServerBrowser *t, SortFunc f) : m_pfnSort(f), m_pThis(t) {}
 	bool operator()(int a, int b) { return (g_Config.m_BrSortOrder ? (m_pThis->*m_pfnSort)(b, a) : (m_pThis->*m_pfnSort)(a, b)); }
 };
+
+inline int GetNewToken()
+{
+	return random_int();
+}
 
 CServerBrowser::CServerBrowser()
 {
@@ -646,32 +652,34 @@ void CServerBrowser::Refresh(int Type)
 
 	if(Type == IServerBrowser::TYPE_LAN)
 	{
-		unsigned char Buffer[sizeof(SERVERBROWSE_GETINFO)+1];
-		CNetChunk Packet;
-		int i;
+		// TODO: cracknet
+		// uncomment this:
+		/*
+		// clear out everything
+		m_aServerlist[IServerBrowser::TYPE_LAN].Clear();
+		if(m_ActServerlistType == IServerBrowser::TYPE_LAN)
+			m_ServerBrowserFilter.Clear();
+		*/
+
+		// next token
+		m_CurrentLanToken = GetNewToken();
+
+		CPacker Packer;
+		Packer.Reset();
+		Packer.AddRaw(SERVERBROWSE_GETINFO, sizeof(SERVERBROWSE_GETINFO));
+		Packer.AddInt(m_CurrentLanToken);
 
 		/* do the broadcast version */
-		Packet.m_ClientID = -1;
+		CNetChunk Packet;
 		mem_zero(&Packet, sizeof(Packet));
 		Packet.m_Address.type = m_pNetClient->NetType()|NETTYPE_LINK_BROADCAST;
-		Packet.m_Flags = NETSENDFLAG_CONNLESS|NETSENDFLAG_EXTENDED;
-		Packet.m_DataSize = sizeof(Buffer);
-		Packet.m_pData = Buffer;
-		// TODO: cracknet
-		// i guess all these extra packets are not useful in 0.7 yet
-		// so better be as 0.7 ish here as possible and wipe out all the old code
-		// mem_zero(&Packet.m_aExtraData, sizeof(Packet.m_aExtraData));
-
-		int Token = GenerateToken(Packet.m_Address);
-		mem_copy(Buffer, SERVERBROWSE_GETINFO, sizeof(SERVERBROWSE_GETINFO));
-		Buffer[sizeof(SERVERBROWSE_GETINFO)] = GetBasicToken(Token);
-
-		// Packet.m_aExtraData[0] = GetExtraToken(Token) >> 8;
-		// Packet.m_aExtraData[1] = GetExtraToken(Token) & 0xff;
-
+		Packet.m_ClientID = -1;
+		Packet.m_Flags = NETSENDFLAG_CONNLESS;
+		Packet.m_DataSize = Packer.Size();
+		Packet.m_pData = Packer.Data();
 		m_BroadcastTime = time_get();
 
-		for(i = 8303; i <= 8310; i++)
+		for(int i = 8303; i <= 8310; i++)
 		{
 			Packet.m_Address.port = i;
 			m_pNetClient->Send(&Packet);
@@ -681,7 +689,24 @@ void CServerBrowser::Refresh(int Type)
 			m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client_srvbrowse", "broadcasting for servers");
 	}
 	else if(Type == IServerBrowser::TYPE_INTERNET)
+	{
+		/*
+		m_aServerlist[IServerBrowser::TYPE_INTERNET].Clear();
+		if(m_ActServerlistType == IServerBrowser::TYPE_INTERNET)
+			m_ServerBrowserFilter.Clear();
+		*/
+		m_pFirstReqServer = 0;
+		m_pLastReqServer = 0;
+		m_NumRequests = 0;
+
 		m_NeedRefresh = 1;
+		// TODO: cracknet
+		/*
+		for(int i = 0; i < m_ServerBrowserFavorites.m_NumFavoriteServers; i++)
+			if(m_ServerBrowserFavorites.m_aFavoriteServers[i].m_State >= CServerBrowserFavorites::FAVSTATE_ADDR)
+				Set(m_ServerBrowserFavorites.m_aFavoriteServers[i].m_Addr, SET_FAV_ADD, -1, 0);
+		*/
+	}
 	else if(Type == IServerBrowser::TYPE_FAVORITES)
 	{
 		for(int i = 0; i < m_NumFavoriteServers; i++)
@@ -731,11 +756,30 @@ void CServerBrowser::Refresh(int Type)
 	}
 }
 
-void CServerBrowser::RequestImpl(const NETADDR &Addr, CServerEntry *pEntry) const
+void CServerBrowser::CBFTrackPacket(int TrackID, void *pCallbackUser)
 {
-	unsigned char Buffer[sizeof(SERVERBROWSE_GETINFO)+1];
-	CNetChunk Packet;
+	if(!pCallbackUser)
+		return;
 
+	CServerBrowser *pSelf = (CServerBrowser *)pCallbackUser;
+	CServerEntry *pEntry = pSelf->m_pFirstReqServer;
+	while(1)
+	{
+		if(!pEntry)	// no more entries
+			break;
+
+		if(pEntry->m_TrackID == TrackID)	// got it -> update
+		{
+			pEntry->m_RequestTime = time_get();
+			break;
+		}
+
+		pEntry = pEntry->m_pNextReq;
+	}
+}
+
+void CServerBrowser::RequestImpl(const NETADDR &Addr, CServerEntry *pEntry)
+{
 	if(g_Config.m_Debug)
 	{
 		char aAddrStr[NETADDR_MAXSTRSIZE];
@@ -745,26 +789,28 @@ void CServerBrowser::RequestImpl(const NETADDR &Addr, CServerEntry *pEntry) cons
 		m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client_srvbrowse", aBuf);
 	}
 
-	int Token = GenerateToken(Addr);
+	CPacker Packer;
+	Packer.Reset();
+	Packer.AddRaw(SERVERBROWSE_GETINFO, sizeof(SERVERBROWSE_GETINFO));
+	Packer.AddInt(pEntry ? pEntry->m_CurrentToken : m_CurrentLanToken);
 
-	mem_copy(Buffer, SERVERBROWSE_GETINFO, sizeof(SERVERBROWSE_GETINFO));
-	Buffer[sizeof(SERVERBROWSE_GETINFO)] = GetBasicToken(Token);
-
+	CNetChunk Packet;
 	Packet.m_ClientID = -1;
 	Packet.m_Address = Addr;
-	Packet.m_Flags = NETSENDFLAG_CONNLESS|NETSENDFLAG_EXTENDED;
-	Packet.m_DataSize = sizeof(Buffer);
-	Packet.m_pData = Buffer;
-	/*
-	mem_zero(&Packet.m_aExtraData, sizeof(Packet.m_aExtraData));
-	Packet.m_aExtraData[0] = GetExtraToken(Token) >> 8;
-	Packet.m_aExtraData[1] = GetExtraToken(Token) & 0xff;
-	*/
-
-	m_pNetClient->Send(&Packet);
+	Packet.m_Flags = NETSENDFLAG_CONNLESS;
+	Packet.m_DataSize = Packer.Size();
+	Packet.m_pData = Packer.Data();
+	CSendCBData Data;
+	Data.m_pfnCallback = CBFTrackPacket;
+	Data.m_pCallbackUser = this;
+	m_pNetClient->Send(&Packet, NET_TOKEN_NONE, &Data);
 
 	if(pEntry)
+	{
+		pEntry->m_TrackID = Data.m_TrackID;
 		pEntry->m_RequestTime = time_get();
+		pEntry->m_InfoState = CServerEntry::STATE_PENDING;
+	}
 }
 
 void CServerBrowser::RequestImpl64(const NETADDR &Addr, CServerEntry *pEntry) const
@@ -796,7 +842,7 @@ void CServerBrowser::RequestImpl64(const NETADDR &Addr, CServerEntry *pEntry) co
 		pEntry->m_RequestTime = time_get();
 }
 
-void CServerBrowser::RequestCurrentServer(const NETADDR &Addr) const
+void CServerBrowser::RequestCurrentServer(const NETADDR &Addr)
 {
 	RequestImpl(Addr, 0);
 }
@@ -812,57 +858,10 @@ void CServerBrowser::Update(bool ForceResort)
 	// do server list requests
 	if(m_NeedRefresh && !m_pMasterServer->IsRefreshing())
 	{
-		NETADDR Addr;
 		CNetChunk Packet;
-		int i = 0;
 
 		m_NeedRefresh = 0;
-		m_MasterServerCount = -1;
-		mem_zero(&Packet, sizeof(Packet));
-		Packet.m_ClientID = -1;
-		Packet.m_Flags = NETSENDFLAG_CONNLESS;
-		Packet.m_DataSize = sizeof(SERVERBROWSE_GETCOUNT);
-		Packet.m_pData = SERVERBROWSE_GETCOUNT;
 
-		for(i = 0; i < IMasterServer::MAX_MASTERSERVERS; i++)
-		{
-			if(!m_pMasterServer->IsValid(i))
-				continue;
-
-			Addr = m_pMasterServer->GetAddr(i);
-			m_pMasterServer->SetCount(i, -1);
-			Packet.m_Address = Addr;
-			m_pNetClient->Send(&Packet);
-			if(g_Config.m_Debug)
-			{
-				dbg_msg("client_srvbrowse", "count-request sent to %d", i);
-			}
-		}
-	}
-
-	//Check if all server counts arrived
-	if(m_MasterServerCount == -1)
-	{
-		m_MasterServerCount = 0;
-		for(int i = 0; i < IMasterServer::MAX_MASTERSERVERS; i++)
-			{
-				if(!m_pMasterServer->IsValid(i))
-					continue;
-				int Count = m_pMasterServer->GetCount(i);
-				if(Count == -1)
-				{
-				/* ignore Server
-					m_MasterServerCount = -1;
-					return;
-					// we don't have the required server information
-					*/
-				}
-				else
-					m_MasterServerCount += Count;
-			}
-		//request Server-List
-		NETADDR Addr;
-		CNetChunk Packet;
 		mem_zero(&Packet, sizeof(Packet));
 		Packet.m_ClientID = -1;
 		Packet.m_Flags = NETSENDFLAG_CONNLESS;
@@ -874,45 +873,17 @@ void CServerBrowser::Update(bool ForceResort)
 			if(!m_pMasterServer->IsValid(i))
 				continue;
 
-			Addr = m_pMasterServer->GetAddr(i);
-			Packet.m_Address = Addr;
+			Packet.m_Address = m_pMasterServer->GetAddr(i);
 			m_pNetClient->Send(&Packet);
 		}
+
+		m_MasterRefreshTime = Now;
+
 		if(g_Config.m_Debug)
-		{
-			dbg_msg("client_srvbrowse", "servercount: %d, requesting server list", m_MasterServerCount);
-		}
-		m_LastPacketTick = 0;
+			m_pConsole->Print(IConsole::OUTPUT_LEVEL_DEBUG, "client_srvbrowse", "requesting server list");
 	}
-	else if(m_MasterServerCount > -1)
-	{
-		m_MasterServerCount = 0;
-		for(int i = 0; i < IMasterServer::MAX_MASTERSERVERS; i++)
-			{
-				if(!m_pMasterServer->IsValid(i))
-					continue;
-				int Count = m_pMasterServer->GetCount(i);
-				if(Count == -1)
-				{
-				/* ignore Server
-					m_MasterServerCount = -1;
-					return;
-					// we don't have the required server information
-					*/
-				}
-				else
-					m_MasterServerCount += Count;
-			}
-			//if(g_Config.m_Debug)
-			//{
-			//	dbg_msg("client_srvbrowse", "ServerCount2: %d", m_MasterServerCount);
-			//}
-	}
-	if(m_MasterServerCount > m_NumRequests  + m_LastPacketTick)
-	{
-		++m_LastPacketTick;
-		return; //wait for more packets
-	}
+
+	// do timeouts
 	pEntry = m_pFirstReqServer;
 	Count = 0;
 	while(1)
