@@ -224,6 +224,25 @@ int CServer::SendMsg(CMsgPacker *pMsg, int Flags, int ClientID)
 	return 0;
 }
 
+void CServer::SendMsgRaw(int ClientID, const void *pData, int Size, int Flags)
+{
+	CNetChunk Packet;
+	mem_zero(&Packet, sizeof(CNetChunk));
+	Packet.m_ClientID = ClientID;
+	Packet.m_pData = pData;
+	Packet.m_DataSize = Size;
+	Packet.m_Flags = 0;
+	if(Flags&MSGFLAG_VITAL)
+	{
+		Packet.m_Flags |= NETSENDFLAG_VITAL;
+	}
+	if(Flags&MSGFLAG_FLUSH)
+	{
+		Packet.m_Flags |= NETSENDFLAG_FLUSH;
+	}
+	m_NetServer.Send(&Packet);
+}
+
 void CServer::DoSnapshot()
 {
 }
@@ -304,6 +323,7 @@ void CServer::UpdateClientRconCommands()
 
 void CServer::ProcessClientPacket(CNetChunk *pPacket)
 {
+
 }
 
 void CServer::SendServerInfoConnless(const NETADDR *pAddr, int Token, int Type)
@@ -332,6 +352,7 @@ void CServer::CCache::Clear()
 
 void CServer::CacheServerInfo(CCache *pCache, int Type, bool SendClients)
 {
+
 }
 
 void CServer::SendServerInfo(const NETADDR *pAddr, int Token, int Type, bool SendClients)
@@ -367,26 +388,6 @@ void CServer::InitRegister(CNetServer *pNetServer, IEngineMasterServer *pMasterS
 int CServer::Run()
 {
 	return 0;
-}
-
-void CServer::ConTestingCommands(CConsole::IResult *pResult, void *pUser)
-{
-}
-
-void CServer::ConRescue(CConsole::IResult *pResult, void *pUser)
-{
-}
-
-void CServer::ConKick(IConsole::IResult *pResult, void *pUser)
-{
-}
-
-void CServer::ConStatus(IConsole::IResult *pResult, void *pUser)
-{
-}
-
-void CServer::AuthRemoveKey(int KeySlot)
-{
 }
 
 void CServer::ConAuthAdd(IConsole::IResult *pResult, void *pUser)
@@ -539,6 +540,7 @@ void CServer::ConchainConnLoggingServerChange(IConsole::IResult *pResult, void *
 
 void CServer::RegisterCommands()
 {
+
 }
 
 

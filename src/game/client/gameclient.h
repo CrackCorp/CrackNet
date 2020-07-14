@@ -20,46 +20,6 @@
 #include <game/client/prediction/entities/laser.h>
 #include <game/client/prediction/entities/pickup.h>
 
-class CGameClient;
-
-class CWeaponData
-{
-public:
-	int m_Tick;
-	vec2 m_Pos;
-	vec2 m_Direction;
-	vec2 StartPos() { return m_Pos + m_Direction * 28.0f * 0.75f; }
-};
-
-class CLocalProjectile
-{
-public:
-	int m_Active;
-	CGameClient *m_pGameClient;
-	CWorldCore *m_pWorld;
-	CCollision *m_pCollision;
-
-	vec2 m_Direction;
-	vec2 m_Pos;
-	int m_StartTick;
-	int m_Type;
-
-	int m_Owner;
-	int m_Weapon;
-	bool m_Explosive;
-	int m_Bouncing;
-	bool m_Freeze;
-	bool m_ExtraInfo;
-
-	vec2 GetPos(float Time);
-	void CreateExplosion(vec2 Pos, int LocalClientID);
-	void Tick(int CurrentTick, int GameTickSpeed, int LocalClientID);
-	void Init(CGameClient *pGameClient, CWorldCore *pWorld, CCollision *pCollision, const CNetObj_Projectile *pProj);
-	void Init(CGameClient *pGameClient, CWorldCore *pWorld, CCollision *pCollision, vec2 Vel, vec2 Pos, int StartTick, int Type, int Owner, int Weapon, bool Explosive, int Bouncing, bool Freeze, bool ExtraInfo);
-	bool GameLayerClipped(vec2 CheckPos);
-	void Deactivate() { m_Active = 0; }
-};
-
 class CGameInfo
 {
 public:
@@ -88,6 +48,7 @@ public:
 	bool m_EntitiesRace;
 	bool m_EntitiesFNG;
 	bool m_EntitiesVanilla;
+	bool m_EntitiesBW;
 
 	bool m_Race;
 
@@ -474,8 +435,11 @@ public:
 	bool AntiPingGrenade() { return g_Config.m_ClAntiPing && g_Config.m_ClAntiPingGrenade && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK; }
 	bool AntiPingWeapons() { return g_Config.m_ClAntiPing && g_Config.m_ClAntiPingWeapons && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK; }
 	bool AntiPingGunfire() { return AntiPingGrenade() && AntiPingWeapons() && g_Config.m_ClAntiPingGunfire; }
-	// bool Predict() { return g_Config.m_ClPredict && !(m_Snap.m_pGameDataObj && m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER) && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK && m_Snap.m_pLocalCharacter; }
+	// bool Predict() { return g_Config.m_ClPredict && !(m_Snap.m_pGameInfoObj && m_Snap.m_pGameInfoObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER) && !m_Snap.m_SpecInfo.m_Active && Client()->State() != IClient::STATE_DEMOPLAYBACK && m_Snap.m_pLocalCharacter; }
+	// bool PredictDummy() { return g_Config.m_ClPredictDummy && Client()->DummyConnected() && m_Snap.m_LocalClientID >= 0 && m_PredictedDummyID >= 0; }
+	// TODO: cracknet
 	bool Predict() { return false; }
+	bool PredictDummy() { return false; }
 
 	CGameWorld m_GameWorld;
 	CGameWorld m_PredictedWorld;
@@ -493,6 +457,8 @@ private:
 	void DetectStrongHook();
 	vec2 GetSmoothPos(int ClientID);
 
+	int m_PredictedDummyID;
+	int m_IsDummySwapping;
 	CCharOrder m_CharOrder;
 	class CCharacter m_aLastWorldCharacters[MAX_CLIENTS];
 

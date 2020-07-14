@@ -276,8 +276,8 @@ public:
 	void SendInput();
 
 	// TODO: OPT: do this a lot smarter!
-	virtual int *GetInput(int Tick);
-	virtual int *GetDirectInput(int Tick);
+	virtual int *GetInput(int Tick, int IsDummy);
+	virtual int *GetDirectInput(int Tick, int IsDummy);
 
 	const char *LatestVersion();
 
@@ -431,6 +431,7 @@ public:
 	void ToggleWindowBordered();
 	void ToggleWindowVSync();
 	void LoadFont();
+	void Notify(const char *pTitle, const char *pMessage);
 
 	// DDRace
 

@@ -25,8 +25,13 @@
 
 #include <list>
 
+#include "antibot.h"
 #include "authmanager.h"
 #include "name_ban.h"
+
+#if defined (CONF_UPNP)
+	#include "upnp.h"
+#endif
 
 #if defined (CONF_SQL)
 	#include "sql_connector.h"
@@ -91,6 +96,11 @@ class CServer : public IServer
 	class IGameServer *m_pGameServer;
 	class IConsole *m_pConsole;
 	class IStorage *m_pStorage;
+	class IEngineAntibot *m_pAntibot;
+
+#if defined(CONF_UPNP)
+	CUPnP m_UPnP;
+#endif
 
 #if defined(CONF_SQL)
 	lock m_GlobalSqlLock;
@@ -109,6 +119,7 @@ public:
 	class IGameServer *GameServer() { return m_pGameServer; }
 	class IConsole *Console() { return m_pConsole; }
 	class IStorage *Storage() { return m_pStorage; }
+	class IEngineAntibot *Antibot() { return m_pAntibot; }
 
 	enum
 	{
@@ -411,6 +422,8 @@ public:
 	void ResetNetErrorString(int ClientID) { return; };
 	bool SetTimedOut(int ClientID, int OrigID);
 	void SetTimeoutProtected(int ClientID) { return; };
+
+	void SendMsgRaw(int ClientID, const void *pData, int Size, int Flags);
 
 	bool ErrorShutdown() const { return m_aErrorShutdownReason[0] != 0; }
 	void SetErrorShutdown(const char *pReason);
