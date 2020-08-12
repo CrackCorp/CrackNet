@@ -106,18 +106,18 @@ void CHud::RenderGameTimer()
 	/*
 	float Half = 300.0f*Graphics()->ScreenAspect()/2.0f;
 
-	if(!(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_SUDDENDEATH))
+	if(!(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_SUDDENDEATH))
 	{
 		char aBuf[32];
 		int Time = 0;
-		if(m_pClient->m_Snap.m_pGameDataObj->m_TimeLimit && (m_pClient->m_Snap.m_pGameDataObj->m_WarmupTimer <= 0))
+		if(m_pClient->m_GameInfo.m_TimeLimit && (m_pClient->m_Snap.m_pGameDataObj->m_WarmupTimer <= 0))
 		{
 			Time = m_pClient->m_Snap.m_pGameInfoObj->m_TimeLimit*60 - ((Client()->GameTick(g_Config.m_ClDummy)-m_pClient->m_Snap.m_pGameInfoObj->m_RoundStartTick)/Client()->GameTickSpeed());
 
-			if(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER)
+			if(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_GAMEOVER)
 				Time = 0;
 		}
-		else if(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME)
+		else if(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_RACETIME)
 		{
 			//The Warmup timer is negative in this case to make sure that incompatible clients will not see a warmup timer
 			Time = (Client()->GameTick(g_Config.m_ClDummy)+m_pClient->m_Snap.m_pGameInfoObj->m_WarmupTimer)/Client()->GameTickSpeed();
@@ -155,8 +155,8 @@ void CHud::RenderPauseNotification()
 {
 	// TODO: cracknet
 	/*
-	if(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_PAUSED &&
-		!(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER))
+	if(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_PAUSED &&
+		!(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_GAMEOVER))
 	{
 		const char *pText = Localize("Game paused");
 		float FontSize = 20.0f;
@@ -170,7 +170,7 @@ void CHud::RenderSuddenDeath()
 {
 	// TODO: cracknet
 	/*
-	if(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_SUDDENDEATH)
+	if(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_SUDDENDEATH)
 	{
 		float Half = 300.0f*Graphics()->ScreenAspect()/2.0f;
 		const char *pText = Localize("Sudden Death");
@@ -186,7 +186,7 @@ void CHud::RenderScoreHud()
 	// TODO: cracknet
 	/*
 	// render small score hud
-	if(!(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER))
+	if(!(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_GAMEOVER))
 	{
 		int GameFlags = m_pClient->m_Snap.m_pGameDataObj->m_GameFlags;
 		float Whole = 300*Graphics()->ScreenAspect();
@@ -509,7 +509,7 @@ void CHud::RenderWarmupTimer()
 	// TODO: cracknet
 	/*
 	// render warmup timer
-	if(m_pClient->m_Snap.m_pGameDataObj->m_WarmupTimer > 0 && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_RACETIME))
+	if(m_pClient->m_Snap.m_pGameDataObj->m_WarmupTimer > 0 && !(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_RACETIME))
 	{
 		char Buf[256];
 		float FontSize = 20.0f;
@@ -797,7 +797,7 @@ void CHud::OnRender()
 	if(g_Config.m_ClShowhud)
 #endif
 	{
-		if(m_pClient->m_Snap.m_pLocalCharacter && !(m_pClient->m_Snap.m_pGameDataObj->m_GameStateFlags&GAMESTATEFLAG_GAMEOVER))
+		if(m_pClient->m_Snap.m_pLocalCharacter && !(m_pClient->m_GameInfo.m_GameFlags&GAMESTATEFLAG_GAMEOVER))
 		{
 			if(g_Config.m_ClShowhudHealthAmmo)
 				RenderHealthAndAmmo(m_pClient->m_Snap.m_pLocalCharacter);

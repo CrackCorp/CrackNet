@@ -900,13 +900,10 @@ void CGameClient::OnStartGame()
 
 void CGameClient::OnFlagGrab(int TeamID)
 {
-	// TODO: cracknet
-	/*
 	if(TeamID == TEAM_RED)
-		m_aStats[m_Snap.m_pGameDataObj->m_FlagCarrierRed].m_FlagGrabs++;
+		m_aStats[m_Snap.m_pGameDataFlag->m_FlagCarrierRed].m_FlagGrabs++;
 	else
-		m_aStats[m_Snap.m_pGameDataObj->m_FlagCarrierBlue].m_FlagGrabs++;
-	*/
+		m_aStats[m_Snap.m_pGameDataFlag->m_FlagCarrierBlue].m_FlagGrabs++;
 }
 
 void CGameClient::OnWindowResize()
@@ -2195,14 +2192,9 @@ void CGameClient::UpdatePrediction()
 	for(int i = 0; i < MAX_CLIENTS; i++)
 		if(m_Snap.m_aCharacters[i].m_Active)
 		{
-			// TODO: cracknet
-			/*
 			bool IsLocal = (i == m_LocalClientID || (PredictDummy() && i == m_PredictedDummyID));
-			int GameTeam = (m_Snap.m_pGameInfoObj->m_GameFlags&GAMEFLAG_TEAMS) ? m_aClients[i].m_Team : i;
-			m_GameWorld.NetCharAdd(i, &m_Snap.m_aCharacters[i].m_Cur,
-					m_Snap.m_aCharacters[i].m_HasExtendedData ? &m_Snap.m_aCharacters[i].m_ExtendedData : 0,
-					GameTeam, IsLocal);
-			*/
+			int GameTeam = (g_GameClient.m_GameInfo.m_GameFlags&GAMEFLAG_TEAMS) ? m_aClients[i].m_Team : i;
+			m_GameWorld.NetCharAdd(i, &m_Snap.m_aCharacters[i].m_Cur, GameTeam, IsLocal);
 		}
 	for(int Index = 0; Index < Num; Index++)
 	{
