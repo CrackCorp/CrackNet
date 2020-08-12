@@ -486,7 +486,7 @@ void CGameClient::OnConnected()
 	m_ServerMode = SERVERMODE_PURE;
 
 	// send the initial info
-	SendInfo(true);
+	SendInfo(false);
 	// we should keep this in for now, because otherwise you can't spectate
 	// people at start as the other info 64 packet is only sent after the first
 	// snap
