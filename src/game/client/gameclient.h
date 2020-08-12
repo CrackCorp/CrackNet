@@ -381,6 +381,7 @@ public:
 	virtual const char *GetItemName(int Type);
 	virtual const char *Version();
 	virtual const char *NetVersion();
+	virtual int ClientVersion() const;
 
 	// actions
 	// TODO: move these

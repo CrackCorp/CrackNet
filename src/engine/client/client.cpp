@@ -405,6 +405,7 @@ void CClient::SendInfo()
 	CMsgPacker Msg(NETMSG_INFO, true);
 	Msg.AddString(GameClient()->NetVersion(), 128);
 	Msg.AddString(m_Password, 128);
+	Msg.AddInt(GameClient()->ClientVersion());
 	SendMsg(&Msg, MSGFLAG_VITAL|MSGFLAG_FLUSH);
 }
 

@@ -114,6 +114,7 @@ void CGameClient::CStack::Add(class CComponent *pComponent) { m_paComponents[m_N
 
 const char *CGameClient::Version() { return GAME_VERSION; }
 const char *CGameClient::NetVersion() { return GAME_NETVERSION; }
+int CGameClient::ClientVersion() const { return CLIENT_VERSION; }
 const char *CGameClient::GetItemName(int Type) { return m_NetObjHandler.GetObjName(Type); }
 
 void CGameClient::OnConsoleInit()

@@ -119,6 +119,14 @@ int CNetClient::Recv(CNetChunk *pChunk, TOKEN *pResponseToken)
 
 int CNetClient::Send(CNetChunk *pChunk, TOKEN Token, CSendCBData *pCallbackData)
 {
+	dbg_msg(
+		"packet",
+		"clientID=%d token=%ud flags=%d ( %s)",
+		pChunk->m_ClientID, Token, pChunk->m_Flags,
+		pChunk->m_Flags&NETSENDFLAG_CONNLESS ? "conless " : "",
+		pChunk->m_Flags&NETSENDFLAG_VITAL ? "vital " : "",
+		pChunk->m_Flags&NETSENDFLAG_FLUSH ? "flush " : ""
+	);
 	if(pChunk->m_Flags&NETSENDFLAG_CONNLESS)
 	{
 		if(pChunk->m_DataSize >= NET_MAX_PAYLOAD)
